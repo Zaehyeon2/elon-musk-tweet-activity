@@ -1534,8 +1534,24 @@
       // Load data from X Tracker API
       async function loadData() {
         const container = document.getElementById("heatmapContainer");
-        container.innerHTML =
-          '<div class="loading"><div class="spinner"></div>Loading tweet data (최근 5주 데이터 로드 중)...</div>';
+
+        // Disable the update button
+        const updateBtn = document.querySelector('.btn-primary[onclick="loadData()"]');
+        if (updateBtn) {
+          updateBtn.disabled = true;
+          updateBtn.textContent = "🔄 Updating...";
+          updateBtn.style.opacity = "0.6";
+          updateBtn.style.cursor = "not-allowed";
+        }
+
+        // Don't clear the container - keep showing previous data
+        // Optional: Add a subtle loading indicator
+        const updateIndicator = document.getElementById("lastUpdated");
+        const originalText = updateIndicator ? updateIndicator.textContent : "";
+        if (updateIndicator) {
+          updateIndicator.textContent = "Updating...";
+          updateIndicator.style.color = "#0366d6";
+        }
 
         // Try corsproxy.io only
         const methods = [
@@ -1614,6 +1630,19 @@
             updateLastRefreshTime();
             startRefreshCountdown();
 
+            // Reset the update indicator color
+            if (updateIndicator) {
+              updateIndicator.style.color = "";
+            }
+
+            // Re-enable the update button
+            if (updateBtn) {
+              updateBtn.disabled = false;
+              updateBtn.textContent = "🔄 Update Now";
+              updateBtn.style.opacity = "";
+              updateBtn.style.cursor = "";
+            }
+
             return; // Success, exit the function
           } catch (error) {
             console.log(`Method ${i + 1} failed:`, error.message);
@@ -1622,28 +1651,47 @@
         }
 
         // All methods failed
-        container.innerHTML = `
-           <div class="error">
-             <h3>Unable to load tweet data</h3>
-             <p>All methods failed including direct API calls with proper headers. The X Tracker API might have additional protection.</p>
-             <div style="margin-top: 15px;">
-               <h4>Alternative Solutions:</h4>
-               <ul style="text-align: left; margin: 10px 0;">
-                 <li>🔄 Wait a few minutes and retry (API might be temporarily down)</li>
-                 <li>📁 Upload a CSV file downloaded from <a href="https://www.xtracker.io/api/download" target="_blank">X Tracker</a></li>
-                 <li>🔧 Install a CORS browser extension like "CORS Unblock" or "CORS Everywhere"</li>
-                 <li>🔗 Open <a href="https://www.xtracker.io/api/download" target="_blank">this link</a>, save as CSV, then upload</li>
-               </ul>
-               <div style="margin: 15px 0;">
-                 <label for="csvFileInput" style="font-weight: 600; margin-bottom: 5px; display: block;">Upload CSV File:</label>
-                 <input type="file" id="csvFileInput" accept=".csv" style="margin: 5px 0; padding: 5px;" onchange="handleFileUpload(event)">
-               </div>
-               <div style="margin: 10px 0;">
-                 <button onclick="loadData()" class="btn btn-primary">🔄 Retry API</button>
+        console.error("All API methods failed");
+
+        // Reset the update indicator
+        if (updateIndicator) {
+          updateIndicator.textContent = originalText + " (update failed)";
+          updateIndicator.style.color = "#d73a49";
+        }
+
+        // Re-enable the update button
+        if (updateBtn) {
+          updateBtn.disabled = false;
+          updateBtn.textContent = "🔄 Update Now";
+          updateBtn.style.opacity = "";
+          updateBtn.style.cursor = "";
+        }
+
+        // Only show error if no previous data exists
+        if (!container.querySelector('.heatmap-table')) {
+          container.innerHTML = `
+             <div class="error">
+               <h3>Unable to load tweet data</h3>
+               <p>All methods failed including direct API calls with proper headers. The X Tracker API might have additional protection.</p>
+               <div style="margin-top: 15px;">
+                 <h4>Alternative Solutions:</h4>
+                 <ul style="text-align: left; margin: 10px 0;">
+                   <li>🔄 Wait a few minutes and retry (API might be temporarily down)</li>
+                   <li>📁 Upload a CSV file downloaded from <a href="https://www.xtracker.io/api/download" target="_blank">X Tracker</a></li>
+                   <li>🔧 Install a CORS browser extension like "CORS Unblock" or "CORS Everywhere"</li>
+                   <li>🔗 Open <a href="https://www.xtracker.io/api/download" target="_blank">this link</a>, save as CSV, then upload</li>
+                 </ul>
+                 <div style="margin: 15px 0;">
+                   <label for="csvFileInput" style="font-weight: 600; margin-bottom: 5px; display: block;">Upload CSV File:</label>
+                   <input type="file" id="csvFileInput" accept=".csv" style="margin: 5px 0; padding: 5px;" onchange="handleFileUpload(event)">
+                 </div>
+                 <div style="margin: 10px 0;">
+                   <button onclick="loadData()" class="btn btn-primary">🔄 Retry API</button>
+                 </div>
                </div>
              </div>
-           </div>
-         `;
+           `;
+        }
       }
 
       // Download current data as CSV
