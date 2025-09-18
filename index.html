@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Elon Musk Tweet Activity Heatmap</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background-color: #f8f9fa;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #e1e4e8;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #24292e;
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .date-range {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .date-range label {
+        font-weight: 600;
+        color: #24292e;
+        font-size: 14px;
+      }
+
+      .date-input {
+        padding: 6px 12px;
+        border: 1px solid #d1d5da;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background-color 0.2s;
+      }
+
+      .btn-primary {
+        background: #0366d6;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #0256cc;
+      }
+
+      .btn-secondary {
+        background: #f6f8fa;
+        color: #24292e;
+        border: 1px solid #d1d5da;
+      }
+
+      .btn-secondary:hover {
+        background: #e1e4e8;
+      }
+
+      .indicators {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+      }
+
+      .indicator {
+        font-weight: 600;
+        color: #24292e;
+        font-size: 14px;
+      }
+
+      .indicator-value {
+        color: #0366d6;
+      }
+
+      .heatmap-container {
+        overflow-x: auto;
+        margin: 20px 0;
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
+        width: 100%;
+      }
+
+      .heatmap-table {
+        border-collapse: collapse;
+        margin: 0;
+        font-size: 12px;
+        width: 100%;
+        table-layout: auto;
+      }
+
+      .heatmap-table th,
+      .heatmap-table td {
+        border: 1px solid #e1e4e8;
+        text-align: center;
+        position: relative;
+      }
+
+      .hour-label {
+        background-color: #f6f8fa;
+        font-weight: 600;
+        color: #586069;
+        padding: 2px 3px;
+        text-align: center;
+        width: 32px;
+        min-width: 32px;
+        max-width: 32px;
+        font-size: 9px;
+        white-space: nowrap;
+      }
+
+      .day-header {
+        background-color: #f6f8fa;
+        font-weight: 700;
+        color: #24292e;
+        padding: 8px 4px;
+        min-width: 40px;
+        font-size: 12px;
+      }
+
+      .activity-cell {
+        min-width: 30px;
+        width: 30px;
+        height: 30px;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        padding: 0;
+      }
+
+      .activity-cell:hover {
+        z-index: 10;
+        border-color: #0366d6;
+      }
+
+      .current-time {
+        border: 3px solid #ff0000 !important;
+        box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), inset 0 0 10px rgba(255, 0, 0, 0.3);
+        animation: pulse 1.5s infinite;
+        z-index: 100;
+        position: relative;
+      }
+
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), inset 0 0 10px rgba(255, 0, 0, 0.3);
+          border-color: #ff0000;
+        }
+        50% {
+          box-shadow: 0 0 30px rgba(255, 0, 0, 1), inset 0 0 15px rgba(255, 0, 0, 0.5);
+          border-color: #ff3333;
+        }
+        100% {
+          box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), inset 0 0 10px rgba(255, 0, 0, 0.3);
+          border-color: #ff0000;
+        }
+      }
+
+      .activity-value {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-weight: 600;
+        font-size: 10px;
+        color: #24292e;
+        white-space: nowrap;
+      }
+
+      /* Color intensity levels - Softer gradient */
+      .level-0 {
+        background-color: #eef7ee;  /* Light green tint for 0 values */
+      }
+      .level-1 {
+        background-color: #c3e6c3;  /* More visible green for 1 */
+      }
+      .level-2 {
+        background-color: #7fc97f;
+      }
+      .level-3 {
+        background-color: #41ab5d;
+      }
+      .level-4 {
+        background-color: #238443;
+      }
+      .level-5 {
+        background-color: #005a32;  /* Darkest green for 10+ */
+      }
+
+      .level-disabled {
+        background-color: #e9ecef;  /* Gray for disabled */
+        color: #6c757d;
+        border: 1px dashed #dee2e6;
+      }
+
+      .level-3 .activity-value,
+      .level-4 .activity-value,
+      .level-5 .activity-value {
+        color: white;
+      }
+
+      .totals-row {
+        background-color: #f6f8fa;
+        font-weight: 700;
+        color: #24292e;
+      }
+
+      .totals-cell {
+        padding: 12px;
+        text-align: center;
+        font-size: 13px;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 60px 20px;
+        color: #586069;
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #e1e4e8;
+        border-radius: 50%;
+        border-top-color: #0366d6;
+        animation: spin 1s ease-in-out infinite;
+        margin-right: 10px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error {
+        text-align: center;
+        padding: 40px 20px;
+        color: #d73a49;
+        background-color: #ffeef0;
+        border: 1px solid #f97583;
+        border-radius: 6px;
+        margin: 20px 0;
+      }
+
+      .tooltip {
+        position: absolute;
+        background-color: #24292e;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        pointer-events: none;
+        z-index: 1000;
+        white-space: nowrap;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      .tooltip.show {
+        opacity: 1;
+      }
+
+      .tooltip::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #24292e transparent transparent transparent;
+        transform: translateX(-50%);
+      }
+
+      .legend {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f6f8fa;
+        border-radius: 6px;
+        font-size: 12px;
+        color: #586069;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+      }
+
+      .heatmaps-wrapper {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+        margin-top: 20px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .heatmap-section {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .heatmap-title {
+        margin: 10px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #24292e;
+      }
+
+      @media (max-width: 1024px) {
+        .heatmaps-wrapper {
+          flex-direction: column;
+          gap: 30px;
+        }
+
+        .heatmap-section {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .header {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .controls {
+          justify-content: space-between;
+        }
+
+        .indicators {
+          justify-content: center;
+          gap: 15px;
+          flex-wrap: wrap;
+        }
+
+        .activity-cell {
+          min-width: 22px;
+          width: 22px;
+          height: 22px;
+        }
+
+        .activity-value {
+          font-size: 8px;
+        }
+
+        .hour-label {
+          font-size: 7px;
+          padding: 1px;
+          width: 25px;
+          min-width: 25px;
+          max-width: 25px;
+        }
+
+        .day-header {
+          font-size: 10px;
+          padding: 4px 2px;
+          min-width: 28px;
+        }
+
+        .heatmap-table {
+          font-size: 10px;
+        }
+
+        .totals-cell {
+          font-size: 10px;
+          padding: 6px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1 class="title">🐦 Elon Musk Tweet Activity</h1>
+        <div class="controls">
+          <div class="date-range">
+            <label for="weekRange">Date Range:</label>
+            <select
+              id="weekRange"
+              class="date-input"
+              onchange="updateDateRange()"
+            >
+              <option value="">Select a week range...</option>
+            </select>
+          </div>
+          <button onclick="loadData()" class="btn btn-primary">
+            🔄 Update Now
+          </button>
+          <button
+            onclick="toggleAutoRefresh()"
+            id="autoRefreshBtn"
+            class="btn btn-secondary"
+          >
+            ⏰ Auto Refresh: OFF
+          </button>
+          <button onclick="downloadCSV()" class="btn btn-secondary">
+            📥 Download Data
+          </button>
+        </div>
+      </div>
+
+      <div class="indicators">
+        <div class="indicator">
+          Current Week: <span id="currentValue" class="indicator-value">-</span>
+        </div>
+        <div class="indicator">
+          4-Week Avg: <span id="avgValue" class="indicator-value">-</span>
+        </div>
+        <div class="indicator">
+          Peak Hour: <span id="peakHour" class="indicator-value">-</span>
+        </div>
+        <div class="indicator">
+          Most Active Day:
+          <span id="mostActiveDay" class="indicator-value">-</span>
+        </div>
+        <div class="indicator">
+          Last Updated: <span id="lastUpdated" class="indicator-value">-</span>
+        </div>
+        <div
+          class="indicator"
+          id="refreshCountdownIndicator"
+          style="display: none"
+        >
+          Next Refresh:
+          <span id="refreshCountdown" class="indicator-value">-</span>
+        </div>
+      </div>
+
+      <div class="heatmaps-wrapper">
+        <div class="heatmap-section">
+          <h3 class="heatmap-title">Current Week</h3>
+          <div id="heatmapContainer" class="heatmap-container">
+            <div class="loading">
+              <div class="spinner"></div>
+              Loading tweet data from X Tracker API...
+            </div>
+          </div>
+        </div>
+        <div class="heatmap-section">
+          <h3 class="heatmap-title">4-Week Average</h3>
+          <div id="averageHeatmapContainer" class="heatmap-container">
+            <div class="loading">
+              <div class="spinner"></div>
+              Calculating 4-week average...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span>Less</span>
+        <div class="legend-item">
+          <div class="legend-color level-0"></div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color level-1"></div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color level-2"></div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color level-3"></div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color level-4"></div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color level-5"></div>
+        </div>
+        <span>More</span>
+      </div>
+    </div>
+
+    <script>
+      let tooltip = null;
+      let currentData = null;
+      let rawTweets = null; // Store raw tweet data for reprocessing
+      let autoRefreshInterval = null; // Auto refresh timer
+      let countdownInterval = null; // Countdown timer
+      let refreshCountdown = 0; // Remaining seconds
+      let isAutoRefreshEnabled = true; // Auto refresh enabled by default
+
+      // Create tooltip element
+      function createTooltip() {
+        tooltip = document.createElement("div");
+        tooltip.className = "tooltip";
+        document.body.appendChild(tooltip);
+      }
+
+      // Show tooltip
+      function showTooltip(event, content) {
+        if (!tooltip) createTooltip();
+        tooltip.textContent = content;
+
+        // Get the target cell's position
+        const rect = event.target.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+
+        // Position tooltip above the cell, centered
+        tooltip.style.left = (rect.left + scrollLeft + rect.width / 2) + "px";
+        tooltip.style.top = (rect.top + scrollTop - 10) + "px";
+        tooltip.style.transform = "translateX(-50%) translateY(-100%)";
+
+        tooltip.classList.add("show");
+      }
+
+      // Hide tooltip
+      function hideTooltip() {
+        if (tooltip) {
+          tooltip.classList.remove("show");
+        }
+      }
+
+      // Parse Twitter date format and convert to ET
+      function parseTwitterDate(dateStr) {
+        try {
+          // Handle formats like "Sep 12, 12:00:37 AM EDT"
+          let cleanDate = dateStr.trim();
+          let isEDT = cleanDate.includes(" EDT");
+          let isEST = cleanDate.includes(" EST");
+
+          // Remove timezone suffix
+          cleanDate = cleanDate.replace(" EDT", "").replace(" EST", "");
+
+          // Add current year if missing (2025 for current data)
+          if (!cleanDate.match(/\b20\d{2}\b/)) {
+            const parts = cleanDate.split(", ");
+            if (parts.length >= 2) {
+              // Insert year after month and day: "Sep 12" -> "Sep 12, 2025"
+              cleanDate = parts[0] + ", 2025, " + parts.slice(1).join(", ");
+            }
+          }
+
+          // Parse the date string directly as Eastern Time
+          // The date is already in ET (EDT or EST), so we parse it as-is
+          let date = new Date(cleanDate);
+
+          if (isNaN(date.getTime())) {
+            console.log("Failed to parse date:", cleanDate);
+            return null;
+          }
+
+          // The date is already parsed correctly as ET
+          // No need for timezone conversion since the source is already in ET
+          return date;
+        } catch (error) {
+          console.log("Date parsing error:", error, "for:", dateStr);
+          return null;
+        }
+      }
+
+      // Parse CSV data with optimization for large files
+      function parseCSV(csvText, maxRows = 5000) {
+        const data = [];
+
+        console.log(`Processing CSV...`);
+
+        // Simple approach: Find all lines ending with EDT or EST
+        // This avoids multiline parsing issues
+        const lines = csvText.split('\n');
+        const tweetLines = [];
+
+        // Find all lines that end with EDT" or EST"
+        lines.forEach((line, index) => {
+          if (line.endsWith('EDT"') || line.endsWith('EST"')) {
+            tweetLines.push(line);
+          }
+        });
+
+        console.log(`Found ${tweetLines.length} tweets by EDT/EST pattern`);
+
+        // Take only the last N tweets if maxRows is specified
+        let linesToProcess = tweetLines;
+        if (maxRows && tweetLines.length > maxRows) {
+          linesToProcess = tweetLines.slice(-maxRows);
+          console.log(`Taking last ${maxRows} tweets from ${tweetLines.length} total`);
+        }
+
+        // Parse each tweet line
+        linesToProcess.forEach(line => {
+          // Extract the date/time part (everything after the last comma before EDT/EST)
+          const edtIndex = line.lastIndexOf('EDT"');
+          const estIndex = line.lastIndexOf('EST"');
+          const timeEndIndex = edtIndex > 0 ? edtIndex : estIndex;
+
+          if (timeEndIndex > 0) {
+            // Find the quote before the date
+            const beforeTime = line.substring(0, timeEndIndex);
+            const lastQuoteBeforeTime = beforeTime.lastIndexOf('"');
+
+            if (lastQuoteBeforeTime > 0) {
+              const dateTimeStr = beforeTime.substring(lastQuoteBeforeTime + 1) + (edtIndex > 0 ? 'EDT' : 'EST');
+
+              // Simple tweet object - we only need the created_at for the heatmap
+              data.push({
+                id: null,
+                text: null,
+                created_at: dateTimeStr
+              });
+            }
+          }
+        });
+
+        console.log(`Parsed ${data.length} tweets`);
+
+        // Debug: Show sample of parsed data
+        console.log("Sample parsed tweets:", data.slice(0, 5));
+        console.log("Last few parsed tweets:", data.slice(-5));
+
+        // Count Sep 5 tweets in parsed data for comparison
+        const sep5Count = data.filter(
+          (tweet) => tweet.created_at && tweet.created_at.includes("Sep 5")
+        ).length;
+        console.log("Sep 5 tweets in parsed data:", sep5Count);
+
+        return data;
+      }
+
+      // Get color level based on value (max = 10)
+      function getColorLevel(value, maxValue) {
+        if (value === 0) return "level-0";
+
+        // Direct thresholds based on 10 max
+        if (value > 0 && value <= 2) return "level-1";  // 1-2
+        if (value <= 4) return "level-2";  // 3-4
+        if (value <= 7) return "level-3";  // 5-7
+        if (value <= 9) return "level-4";  // 8-9
+        return "level-5";  // 10+
+      }
+
+      // Format hour for display
+      function formatHour(hour) {
+        if (hour === 0) return "12 AM";
+        if (hour === 12) return "12 PM";
+        if (hour < 12) return `${hour} AM`;
+        return `${hour - 12} PM`;
+      }
+
+      // Process data into heatmap
+      function processData(tweets, startDate, endDate, rangeType = 'friday') {
+        const hours = Array.from({ length: 24 }, (_, i) => formatHour(i));
+
+        let validTweets = 0;
+        const start = startDate ? new Date(startDate + "T00:00:00") : null; // Start at beginning of start date
+        const end = endDate ? new Date(endDate + "T23:59:59") : null; // End at end of end date
+
+        // Determine the actual date range and days to show
+        let actualStart, actualEnd, days, grid;
+
+        if (start && end) {
+          actualStart = new Date(start);
+          actualEnd = new Date(end);
+
+          // Always 8 days for noon-to-noon ranges
+          const dayCount = 8;
+
+          // Generate day labels based on actual dates
+          days = [];
+          const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+
+          // Generate day labels based on the actual date range
+          for (let i = 0; i < dayCount; i++) {
+            const currentDate = new Date(actualStart);
+            currentDate.setDate(actualStart.getDate() + i);
+            const dayOfWeek = currentDate.getDay();
+            days.push(dayNames[dayOfWeek]);
+          }
+
+          console.log("=== DATE RANGE DEBUG ===");
+          console.log("Input startDate:", startDate);
+          console.log("Input endDate:", endDate);
+          console.log("Parsed start:", actualStart);
+          console.log("Parsed end:", actualEnd);
+          console.log("Day count:", dayCount);
+          console.log("Generated days for range:", days);
+          console.log(
+            "Start date day of week:",
+            actualStart.getDay(),
+            "(" + dayNames[actualStart.getDay()] + ")"
+          );
+
+          // Initialize grid based on actual day count
+          grid = Array(24)
+            .fill()
+            .map(() => Array(days.length).fill(0));
+        } else {
+          // Default to full week starting Monday
+          days = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+          grid = Array(24)
+            .fill()
+            .map(() => Array(7).fill(0));
+        }
+
+        let totalProcessed = 0;
+        let validDates = 0;
+        let filteredOut = 0;
+        let noonFiltered = 0;
+
+        tweets.forEach((tweet) => {
+          totalProcessed++;
+          const date = parseTwitterDate(tweet.created_at);
+          if (date) {
+            validDates++;
+
+            // Apply date range and noon filtering
+            if (start && end) {
+              // Create date strings for comparison (YYYY-MM-DD format)
+              const tweetYear = date.getFullYear();
+              const tweetMonth = String(date.getMonth() + 1).padStart(2, '0');
+              const tweetDay = String(date.getDate()).padStart(2, '0');
+              const tweetDateStr = `${tweetYear}-${tweetMonth}-${tweetDay}`;
+              const tweetHour = date.getHours();
+
+              // For start date (Friday): include only from noon onwards
+              // Sep 12 is the start date, so we exclude before noon
+              if (tweetDateStr === startDate) {
+                if (tweetHour < 12) {
+                  noonFiltered++;
+                  return;
+                }
+              }
+              // For dates before start date: exclude all
+              else if (tweetDateStr < startDate) {
+                filteredOut++;
+                return;
+              }
+
+              // For end date (Friday): include only before noon
+              if (tweetDateStr === endDate) {
+                if (tweetHour >= 12) {
+                  noonFiltered++;
+                  return;
+                }
+              }
+              // For dates after end date: exclude all
+              else if (tweetDateStr > endDate) {
+                filteredOut++;
+                return;
+              }
+            }
+
+            const hour = date.getHours();
+
+            if (start && end) {
+              // Calculate which day column this date falls into
+              // Create date at midnight for accurate day calculation
+              const tweetMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+              const startMidnight = new Date(actualStart.getFullYear(), actualStart.getMonth(), actualStart.getDate());
+
+              const daysDiff = Math.floor(
+                (tweetMidnight - startMidnight) / (1000 * 60 * 60 * 24)
+              );
+
+              // Allow daysDiff from 0 to 7 (8 days total)
+              if (daysDiff >= 0 && daysDiff < days.length) {
+                grid[hour][daysDiff]++;
+                validTweets++;
+              }
+            } else {
+              // Default behavior - map to day of week
+              const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+              const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday = 0
+
+              if (adjustedDay >= 0 && adjustedDay < days.length) {
+                grid[hour][adjustedDay]++;
+                validTweets++;
+              }
+            }
+          }
+        });
+
+        // Calculate totals excluding disabled cells (noon rules)
+        const totals = days.map((_, dayIndex) => {
+          let total = 0;
+          for (let hourIndex = 0; hourIndex < 24; hourIndex++) {
+            // Skip disabled cells based on noon rules
+            if (dayIndex === 0 && hourIndex < 12) continue; // First Friday before noon
+            if (dayIndex === days.length - 1 && hourIndex >= 12) continue; // Last Friday from noon
+            total += grid[hourIndex][dayIndex];
+          }
+          return total;
+        });
+
+        const maxValue = Math.max(...grid.flat());
+        const peakHourIndex = grid.findIndex((row) => row.includes(maxValue));
+        const peakHour = formatHour(peakHourIndex);
+        const mostActiveDayIndex = totals.indexOf(Math.max(...totals));
+        const mostActiveDay = days[mostActiveDayIndex];
+
+        // Debug logging
+        console.log("=== PROCESSING SUMMARY ===");
+        console.log("Total tweets processed:", totalProcessed);
+        console.log("Valid dates parsed:", validDates);
+        console.log("Filtered out by date range:", filteredOut);
+        console.log("Filtered out by noon rule:", noonFiltered);
+        console.log("Final valid tweets:", validTweets);
+        console.log("Date range:", actualStart, "to", actualEnd);
+
+        return {
+          grid,
+          hours,
+          days,
+          totals,
+          current: validTweets,
+          maxValue,
+          peakHour,
+          mostActiveDay,
+          dateRange: { start: actualStart, end: actualEnd },
+        };
+      }
+
+      // Calculate 4-week average
+      function calculate4WeekAverage(tweets, currentStartDate, currentEndDate) {
+        if (!tweets || tweets.length === 0) return null;
+
+        const hours = Array.from({ length: 24 }, (_, i) => formatHour(i));
+
+        // Use same day pattern as current week (8 days, noon to noon)
+        const start = currentStartDate ? new Date(currentStartDate + "T00:00:00") : null;
+        const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+        let days = [];
+
+        if (start) {
+          // Generate same day labels as current week
+          for (let i = 0; i < 8; i++) {
+            const currentDate = new Date(start);
+            currentDate.setDate(start.getDate() + i);
+            const dayOfWeek = currentDate.getDay();
+            days.push(dayNames[dayOfWeek]);
+          }
+        } else {
+          days = ["FRI", "SAT", "SUN", "MON", "TUE", "WED", "THU", "FRI"];
+        }
+
+        // Initialize grid for totals (8 days)
+        const totals = Array(24).fill().map(() => Array(8).fill(0));
+        const weekCounts = Array(24).fill().map(() => Array(8).fill(0));
+
+        // Get tweets from last 4 weeks based on the current selected range
+        // Use the actual start date from the selected range
+        let currentWeekStart;
+        if (currentStartDate) {
+          // Use the selected date range's start date
+          currentWeekStart = new Date(currentStartDate + "T12:00:00");
+        } else {
+          // Fallback to Friday if no date selected
+          const now = new Date();
+          currentWeekStart = new Date(now);
+          while (currentWeekStart.getDay() !== 5) { // Find last Friday
+            currentWeekStart.setDate(currentWeekStart.getDate() - 1);
+          }
+          currentWeekStart.setHours(12, 0, 0, 0);
+        }
+
+        // Process each of the 4 previous weeks
+        for (let week = 1; week <= 4; week++) {
+          const weekStart = new Date(currentWeekStart);
+          weekStart.setDate(weekStart.getDate() - (week * 7));
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekEnd.getDate() + 8); // 8 days to include the last day
+
+          tweets.forEach(tweet => {
+            const date = parseTwitterDate(tweet.created_at);
+            if (date && date >= weekStart && date < weekEnd) {
+              const hour = date.getHours();
+
+              // Calculate day position in the week pattern
+              const daysDiff = Math.floor((date - weekStart) / (1000 * 60 * 60 * 24));
+              if (daysDiff >= 0 && daysDiff <= 7) { // Include day 7 (8th day)
+                // Apply noon filtering for first and last day
+                if (daysDiff === 0 && hour < 12) return; // Skip first day before noon
+                if (daysDiff === 7 && hour >= 12) return; // Skip last day from noon
+
+                totals[hour][daysDiff]++;
+                weekCounts[hour][daysDiff]++;
+              }
+            }
+          });
+        }
+
+        // Calculate averages
+        const avgGrid = totals.map((hourRow, hourIndex) =>
+          hourRow.map((total, dayIndex) => {
+            // Divide by 4 to get weekly average
+            return Math.round(total / 4 * 10) / 10; // Round to 1 decimal
+          })
+        );
+
+        // Calculate totals excluding disabled cells
+        const avgTotals = days.map((_, dayIndex) => {
+          let total = 0;
+          for (let hourIndex = 0; hourIndex < 24; hourIndex++) {
+            // Skip disabled cells based on noon rules
+            if (dayIndex === 0 && hourIndex < 12) continue; // First day before noon
+            if (dayIndex === days.length - 1 && hourIndex >= 12) continue; // Last day from noon
+            total += avgGrid[hourIndex][dayIndex];
+          }
+          return Math.round(total);
+        });
+
+        const maxValue = Math.max(...avgGrid.flat());
+
+        return {
+          grid: avgGrid,
+          hours,
+          days,
+          totals: avgTotals,
+          current: avgTotals.reduce((sum, val) => sum + val, 0),
+          maxValue,
+          peakHour: formatHour(avgGrid.findIndex(row => row.includes(maxValue))),
+          mostActiveDay: days[avgTotals.indexOf(Math.max(...avgTotals))],
+          dateRange: { start: new Date(currentStartDate), end: new Date(currentEndDate) }
+        };
+      }
+
+      // Render average heatmap
+      function renderAverageHeatmap(data) {
+        const container = document.getElementById("averageHeatmapContainer");
+
+        if (!data) {
+          container.innerHTML = '<div class="error">No data for 4-week average</div>';
+          document.getElementById("avgValue").textContent = "-";
+          return;
+        }
+
+        const { grid, hours, days, totals, current, maxValue, dateRange } = data;
+
+        // Update 4-week average indicator
+        document.getElementById("avgValue").textContent = Math.round(current).toLocaleString();
+
+        let html = '<table class="heatmap-table">';
+
+        // Header row
+        html += "<tr>";
+        html += '<th class="hour-label"></th>';
+        days.forEach((day) => {
+          html += `<th class="day-header">${day}</th>`;
+        });
+        html += "</tr>";
+
+        // Data rows
+        hours.forEach((hour, hourIndex) => {
+          html += "<tr>";
+          html += `<td class="hour-label">${hour}</td>`;
+
+          days.forEach((day, dayIndex) => {
+            let value = grid[hourIndex][dayIndex];
+            let colorLevel = getColorLevel(value, maxValue);
+            let displayValue = value > 0 ? value.toFixed(1) : "0.0";
+
+            // Check if this cell should be disabled (noon rule applied)
+            let isDisabled = false;
+            if (dateRange && dateRange.start && dateRange.end) {
+              // First day before noon: disabled
+              if (dayIndex === 0 && hourIndex < 12) {
+                isDisabled = true;
+                displayValue = "-";
+                colorLevel = "level-disabled";
+                value = 0;
+              }
+              // Last day from noon onwards: disabled
+              if (dayIndex === days.length - 1 && hourIndex >= 12) {
+                isDisabled = true;
+                displayValue = "-";
+                colorLevel = "level-disabled";
+                value = 0;
+              }
+            }
+
+            // Check if this is the current time
+            let isCurrentTime = false;
+            const now = new Date();
+            if (dateRange && dateRange.start) {
+              const cellDate = new Date(dateRange.start);
+              cellDate.setDate(cellDate.getDate() + dayIndex);
+
+              // Check if it's today and current hour (in ET timezone)
+              const nowET = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+              if (cellDate.toDateString() === now.toDateString() &&
+                  hourIndex === nowET.getHours()) {
+                isCurrentTime = true;
+              }
+            }
+
+            let tooltipText = `${day} ${hour}: ${value.toFixed(1)} avg tweets`;
+            if (isCurrentTime) {
+              tooltipText += " 🔴 CURRENT HOUR";
+            }
+
+            const currentTimeClass = isCurrentTime ? "current-time" : "";
+            html += `<td class="activity-cell ${colorLevel} ${currentTimeClass}"
+                        onmouseover="showTooltip(event, '${tooltipText}')"
+                        onmouseout="hideTooltip()">`;
+            html += `<span class="activity-value" style="font-size: 10px;">${displayValue}</span>`;
+            html += "</td>";
+          });
+
+          html += "</tr>";
+        });
+
+        // Totals row
+        html += '<tr class="totals-row">';
+        html += '<td class="totals-cell"><strong>AVG</strong></td>';
+        totals.forEach((total) => {
+          html += `<td class="totals-cell"><strong>${total}</strong></td>`;
+        });
+        html += "</tr>";
+
+        html += "</table>";
+        container.innerHTML = html;
+      }
+
+      // Render heatmap
+      function renderHeatmap(data) {
+        const container = document.getElementById("heatmapContainer");
+
+        if (!data) {
+          container.innerHTML =
+            '<div class="error">Failed to process tweet data</div>';
+          return;
+        }
+
+        const {
+          grid,
+          hours,
+          days,
+          totals,
+          current,
+          maxValue,
+          peakHour,
+          mostActiveDay,
+          dateRange,
+        } = data;
+
+        // Update indicators
+        document.getElementById("currentValue").textContent =
+          current.toLocaleString();
+        document.getElementById("peakHour").textContent = peakHour;
+        document.getElementById("mostActiveDay").textContent = mostActiveDay;
+
+        let html = '<table class="heatmap-table">';
+
+        // Header row
+        html += "<tr>";
+        html += '<th class="hour-label"></th>';
+        days.forEach((day) => {
+          html += `<th class="day-header">${day}</th>`;
+        });
+        html += "</tr>";
+
+        // Data rows
+        hours.forEach((hour, hourIndex) => {
+          html += "<tr>";
+          html += `<td class="hour-label">${hour}</td>`;
+
+          days.forEach((day, dayIndex) => {
+            let value = grid[hourIndex][dayIndex];
+            let colorLevel = getColorLevel(value, maxValue);
+            let displayValue = value >= 0 ? value : ""; // Show 0 instead of empty
+
+            // Check if this cell should be disabled (noon rule applied)
+            let isDisabled = false;
+            if (dateRange && dateRange.start && dateRange.end) {
+              // First day before noon: disabled
+              if (dayIndex === 0 && hourIndex < 12) {
+                isDisabled = true;
+                displayValue = "-";
+                colorLevel = "level-disabled";
+                value = 0; // Set value to 0 for disabled cells
+              }
+              // Last day from noon onwards: disabled
+              if (dayIndex === days.length - 1 && hourIndex >= 12) {
+                isDisabled = true;
+                displayValue = "-";
+                colorLevel = "level-disabled";
+                value = 0; // Set value to 0 for disabled cells
+              }
+            }
+
+            // Check if this is the current time
+            let isCurrentTime = false;
+            const now = new Date();
+            if (dateRange && dateRange.start) {
+              const cellDate = new Date(dateRange.start);
+              cellDate.setDate(cellDate.getDate() + dayIndex);
+
+              // Check if it's today and current hour (in ET timezone)
+              const nowET = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+              if (cellDate.toDateString() === now.toDateString() &&
+                  hourIndex === nowET.getHours()) {
+                isCurrentTime = true;
+              }
+            }
+
+            // Create tooltip with actual date if available
+            let tooltipText = `${day} ${hour}: ${value} tweets`;
+            if (dateRange && dateRange.start) {
+              const actualDate = new Date(dateRange.start);
+              actualDate.setDate(actualDate.getDate() + dayIndex);
+              const dateStr = actualDate.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              });
+              tooltipText = `${dateStr} (${day}) ${hour}: ${value} tweets`;
+              if (isCurrentTime) {
+                tooltipText += " 🔴 CURRENT HOUR";
+              }
+            }
+
+            const currentTimeClass = isCurrentTime ? "current-time" : "";
+            html += `<td class="activity-cell ${colorLevel} ${currentTimeClass}"
+                        onmouseover="showTooltip(event, '${tooltipText}')"
+                        onmouseout="hideTooltip()">`;
+            html += `<span class="activity-value">${displayValue}</span>`;
+            html += "</td>";
+          });
+
+          html += "</tr>";
+        });
+
+        // Totals row
+        html += '<tr class="totals-row">';
+        html += '<td class="totals-cell"><strong>TOTALS</strong></td>';
+        totals.forEach((total) => {
+          html += `<td class="totals-cell"><strong>${total}</strong></td>`;
+        });
+        html += "</tr>";
+
+        html += "</table>";
+        container.innerHTML = html;
+      }
+
+      // Load data from X Tracker API
+      async function loadData() {
+        const container = document.getElementById("heatmapContainer");
+        container.innerHTML =
+          '<div class="loading"><div class="spinner"></div>Loading tweet data (최신 5000개 로드 중)...</div>';
+
+        // Try corsproxy.io only
+        const methods = [
+          // Method 1: Use CORS proxy with POST data
+          () =>
+            fetch(
+              "https://corsproxy.io/?https://www.xtracker.io/api/download",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ handle: "elonmusk", platform: "X" }),
+              }
+            ),
+        ];
+
+        for (let i = 0; i < methods.length; i++) {
+          try {
+            console.log(`Trying method ${i + 1}...`);
+            const response = await methods[i]();
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const csvText = await response.text();
+
+            // Check if we got valid CSV data
+            if (
+              !csvText.includes("id,text,created_at") &&
+              !csvText.includes("created_at")
+            ) {
+              throw new Error("Invalid CSV format");
+            }
+
+            // Parse only the last 5000 rows for better performance (최신 데이터)
+            const tweets = parseCSV(csvText, 5000);
+
+            if (tweets.length === 0) {
+              throw new Error("No valid tweets found");
+            }
+
+            console.log(
+              `Successfully loaded ${tweets.length} tweets using method ${
+                i + 1
+              }`
+            );
+
+            // Store raw tweets for future use
+            rawTweets = tweets;
+
+            // Populate week ranges on first successful load
+            populateWeekRanges(tweets);
+
+            const { startDate, endDate, type } = getSelectedDateRange();
+            currentData = processData(tweets, startDate, endDate, type);
+            renderHeatmap(currentData);
+
+            // Calculate and render 4-week average
+            const avgData = calculate4WeekAverage(tweets, startDate, endDate);
+            renderAverageHeatmap(avgData);
+
+            // Update last refresh time and start countdown
+            updateLastRefreshTime();
+            startRefreshCountdown();
+
+            return; // Success, exit the function
+          } catch (error) {
+            console.log(`Method ${i + 1} failed:`, error.message);
+            // Continue to next method
+          }
+        }
+
+        // All methods failed
+        container.innerHTML = `
+           <div class="error">
+             <h3>Unable to load tweet data</h3>
+             <p>All methods failed including direct API calls with proper headers. The X Tracker API might have additional protection.</p>
+             <div style="margin-top: 15px;">
+               <h4>Alternative Solutions:</h4>
+               <ul style="text-align: left; margin: 10px 0;">
+                 <li>🔄 Wait a few minutes and retry (API might be temporarily down)</li>
+                 <li>📁 Upload a CSV file downloaded from <a href="https://www.xtracker.io/api/download" target="_blank">X Tracker</a></li>
+                 <li>🔧 Install a CORS browser extension like "CORS Unblock" or "CORS Everywhere"</li>
+                 <li>🔗 Open <a href="https://www.xtracker.io/api/download" target="_blank">this link</a>, save as CSV, then upload</li>
+               </ul>
+               <div style="margin: 15px 0;">
+                 <label for="csvFileInput" style="font-weight: 600; margin-bottom: 5px; display: block;">Upload CSV File:</label>
+                 <input type="file" id="csvFileInput" accept=".csv" style="margin: 5px 0; padding: 5px;" onchange="handleFileUpload(event)">
+               </div>
+               <div style="margin: 10px 0;">
+                 <button onclick="loadData()" class="btn btn-primary">🔄 Retry API</button>
+               </div>
+             </div>
+           </div>
+         `;
+      }
+
+      // Download current data as CSV
+      function downloadCSV() {
+        if (!currentData) {
+          alert("No data available to download");
+          return;
+        }
+
+        // Create CSV content
+        let csvContent =
+          "Hour,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday\n";
+
+        currentData.hours.forEach((hour, hourIndex) => {
+          const row = [hour, ...currentData.grid[hourIndex]];
+          csvContent += row.join(",") + "\n";
+        });
+
+        // Add totals row
+        csvContent += "TOTALS," + currentData.totals.join(",") + "\n";
+
+        // Create and download file
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "elon-tweet-heatmap.csv";
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+
+      // Generate specific date ranges based on pattern (deprecated - not used anymore)
+      function generateWeekRanges(tweets) {
+        // This function is no longer used
+        // Date ranges are now generated dynamically in populateWeekRanges()
+        return [];
+      }
+
+      // Populate week range dropdown
+      function populateWeekRanges(tweets = null) {
+        const select = document.getElementById("weekRange");
+
+        // Clear existing options
+        select.innerHTML = '<option value="">Select a week range...</option>';
+
+        if (!tweets || tweets.length === 0) {
+          return;
+        }
+
+        // Find date range from actual tweet data
+        const dates = [];
+        tweets.forEach(tweet => {
+          const date = parseTwitterDate(tweet.created_at);
+          if (date) {
+            dates.push(date);
+          }
+        });
+
+        if (dates.length === 0) return;
+
+        // Sort dates
+        dates.sort((a, b) => a - b);
+
+        // Get min and max dates
+        const minDate = dates[0];
+        const maxDate = dates[dates.length - 1];
+
+        // Generate weekly ranges based on actual data
+        const ranges = [];
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        // Specific date ranges following the pattern
+        const specificRanges = [
+          { start: new Date('2025-09-05'), end: new Date('2025-09-12') }, // Fri-Fri
+          { start: new Date('2025-09-09'), end: new Date('2025-09-16') }, // Tue-Tue
+          { start: new Date('2025-09-12'), end: new Date('2025-09-19') }, // Fri-Fri
+          { start: new Date('2025-09-16'), end: new Date('2025-09-23') }, // Tue-Tue
+          { start: new Date('2025-09-19'), end: new Date('2025-09-26') }, // Fri-Fri
+        ];
+
+        // Add any additional Friday-Friday ranges before and after
+        const currentDate = new Date();
+
+        // Add earlier ranges if needed (before Sep 5)
+        let earliestFriday = new Date('2025-09-05');
+        while (earliestFriday > minDate) {
+          const prevFriday = new Date(earliestFriday);
+          prevFriday.setDate(prevFriday.getDate() - 7);
+
+          if (prevFriday < minDate) break;
+
+          specificRanges.unshift({
+            start: new Date(prevFriday),
+            end: new Date(earliestFriday)
+          });
+
+          earliestFriday = prevFriday;
+        }
+
+        // Add later ranges if needed (after Sep 26)
+        let latestFriday = new Date('2025-09-26');
+        while (latestFriday < currentDate || latestFriday < maxDate) {
+          const nextFriday = new Date(latestFriday);
+          nextFriday.setDate(nextFriday.getDate() + 7);
+
+          specificRanges.push({
+            start: new Date(latestFriday),
+            end: new Date(nextFriday)
+          });
+
+          latestFriday = nextFriday;
+
+          if (latestFriday > currentDate && latestFriday > maxDate) break;
+        }
+
+        // Process each range - only include ranges that have started (noon ET on start date)
+        specificRanges.forEach(range => {
+          // Check if the range has started (noon ET on start date)
+          // Create start date at noon
+          const rangeStartNoon = new Date(range.start);
+          rangeStartNoon.setHours(12, 0, 0, 0);
+
+          // Current time
+          const now = new Date();
+
+          // Only include ranges where start date noon has passed
+          if (rangeStartNoon <= now) {
+            const startDay = dayNames[range.start.getDay()];
+            const endDay = dayNames[range.end.getDay()];
+
+            const startStr = range.start.toISOString().split('T')[0];
+            const endStr = range.end.toISOString().split('T')[0];
+
+            const startLabel = range.start.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+            const endLabel = range.end.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+            ranges.push({
+              value: `${startStr}|${endStr}|${startDay.toLowerCase()}`,
+              display: `${startLabel} - ${endLabel} (${startDay}-${endDay})`,
+              startDate: startStr,
+              endDate: endStr,
+              endDateTime: range.end
+            });
+          }
+        });
+
+        // Add ranges to dropdown in reverse order (most recent first)
+        ranges.reverse();
+
+        // Add all ranges to dropdown
+        ranges.forEach((range) => {
+          const option = document.createElement("option");
+          option.value = range.value;
+          option.textContent = range.display;
+          select.appendChild(option);
+        });
+
+        // Find the ongoing range with the earliest end date (will end soonest)
+        const now = new Date();
+        let earliestEndingOngoingIndex = -1;
+        let earliestEndDate = null;
+
+        ranges.forEach((range, index) => {
+          // Check if this range is ongoing (end date noon hasn't passed)
+          const endDateNoon = new Date(range.endDate + 'T12:00:00');
+
+          if (endDateNoon > now) {
+            // This range is ongoing
+            if (!earliestEndDate || endDateNoon < earliestEndDate) {
+              // This is the earliest ending ongoing range so far
+              earliestEndDate = endDateNoon;
+              earliestEndingOngoingIndex = index + 1; // +1 for the "Select a week range..." option
+            }
+          }
+        });
+
+        // Select the earliest ending ongoing range (Sep 12-19 before Sep 16-23)
+        if (earliestEndingOngoingIndex > 0) {
+          select.options[earliestEndingOngoingIndex].selected = true;
+        } else if (ranges.length > 0) {
+          // If all ranges are completed, select the most recent
+          select.options[1].selected = true;
+        }
+      }
+
+      // Update date range when dropdown changes
+      function updateDateRange() {
+        const select = document.getElementById("weekRange");
+        const selectedValue = select.value;
+
+        if (selectedValue && rawTweets) {
+          console.log("Reprocessing data for new date range...");
+
+          const { startDate, endDate, type } = getSelectedDateRange();
+          currentData = processData(rawTweets, startDate, endDate, type);
+          renderHeatmap(currentData);
+
+          // Recalculate 4-week average
+          const avgData = calculate4WeekAverage(rawTweets, startDate, endDate);
+          renderAverageHeatmap(avgData);
+        } else if (selectedValue) {
+          // If no raw data available, load from API
+          loadData();
+        }
+      }
+
+      // Get selected date range
+      function getSelectedDateRange() {
+        const select = document.getElementById("weekRange");
+        const selectedValue = select.value;
+
+        if (selectedValue) {
+          const parts = selectedValue.split("|");
+          const [startDate, endDate] = parts;
+          const type = parts[2] || 'friday'; // Default to friday if not specified
+          return { startDate, endDate, type };
+        }
+
+        return { startDate: null, endDate: null, type: null };
+      }
+
+      // Handle file upload
+      function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            const csvText = e.target.result;
+            // Parse only the last 5000 rows for better performance
+            const tweets = parseCSV(csvText, 5000);
+
+            if (tweets.length === 0) {
+              alert("No valid tweets found in the uploaded file");
+              return;
+            }
+
+            console.log(`Loaded ${tweets.length} tweets from uploaded file`);
+
+            // Populate week ranges when file is uploaded
+            populateWeekRanges(tweets);
+
+            const { startDate, endDate, type } = getSelectedDateRange();
+            currentData = processData(tweets, startDate, endDate, type);
+            renderHeatmap(currentData);
+
+            // Calculate and render 4-week average
+            const avgData = calculate4WeekAverage(tweets, startDate, endDate);
+            renderAverageHeatmap(avgData);
+          } catch (error) {
+            alert("Error parsing CSV file: " + error.message);
+          }
+        };
+
+        reader.readAsText(file);
+      }
+
+      // Auto refresh functions
+      function toggleAutoRefresh() {
+        const btn = document.getElementById("autoRefreshBtn");
+        const countdownIndicator = document.getElementById(
+          "refreshCountdownIndicator"
+        );
+
+        if (isAutoRefreshEnabled) {
+          // Disable auto refresh
+          isAutoRefreshEnabled = false;
+          if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+          }
+          if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+          }
+          btn.textContent = "⏰ Auto Refresh: OFF";
+          btn.className = "btn btn-secondary";
+          countdownIndicator.style.display = "none";
+        } else {
+          // Enable auto refresh
+          isAutoRefreshEnabled = true;
+          autoRefreshInterval = setInterval(() => {
+            console.log("Auto refreshing data...");
+            loadData();
+          }, 60000); // 1 minute
+
+          btn.textContent = "⏰ Auto Refresh: ON";
+          btn.className = "btn btn-primary";
+          countdownIndicator.style.display = "block";
+          startRefreshCountdown();
+        }
+      }
+
+      function startRefreshCountdown() {
+        if (!isAutoRefreshEnabled) return;
+
+        refreshCountdown = 60; // 60 seconds
+
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+        }
+
+        countdownInterval = setInterval(() => {
+          refreshCountdown--;
+          updateCountdownDisplay();
+
+          if (refreshCountdown <= 0) {
+            refreshCountdown = 60; // Reset for next cycle
+          }
+        }, 1000);
+
+        updateCountdownDisplay();
+      }
+
+      function updateCountdownDisplay() {
+        const countdownElement = document.getElementById("refreshCountdown");
+        if (countdownElement && isAutoRefreshEnabled) {
+          const minutes = Math.floor(refreshCountdown / 60);
+          const seconds = refreshCountdown % 60;
+          countdownElement.textContent = `${minutes}:${seconds
+            .toString()
+            .padStart(2, "0")}`;
+        }
+      }
+
+      function updateLastRefreshTime() {
+        const lastUpdatedElement = document.getElementById("lastUpdated");
+        if (lastUpdatedElement) {
+          const now = new Date();
+          const timeString = now.toLocaleTimeString("en-US", {
+            hour12: true,
+            hour: "numeric",
+            minute: "2-digit",
+            second: "2-digit",
+          });
+          lastUpdatedElement.textContent = timeString;
+        }
+      }
+
+      // Initialize
+      document.addEventListener("DOMContentLoaded", function () {
+        // Initialize with empty week ranges - will be populated when data loads
+        populateWeekRanges();
+
+        // Enable auto refresh by default
+        const btn = document.getElementById("autoRefreshBtn");
+        const countdownIndicator = document.getElementById("refreshCountdownIndicator");
+        if (isAutoRefreshEnabled) {
+          autoRefreshInterval = setInterval(() => {
+            console.log("Auto refreshing data...");
+            loadData();
+          }, 60000); // 1 minute
+
+          btn.textContent = "⏰ Auto Refresh: ON";
+          btn.className = "btn btn-primary";
+          countdownIndicator.style.display = "block";
+        }
+
+        // Load data from API
+        loadData();
+      });
+    </script>
+  </body>
+</html>
