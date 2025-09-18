@@ -1001,11 +1001,60 @@
           currentData.dateRange.start &&
           currentData.dateRange.end
         ) {
-          const startDate = new Date(currentData.dateRange.start);
-          startDate.setHours(12, 0, 0, 0); // Week starts at noon
+          // Convert date objects to YYYY-MM-DD format
+          const startDateObj = new Date(currentData.dateRange.start);
+          const endDateObj = new Date(currentData.dateRange.end);
 
-          const endDate = new Date(currentData.dateRange.end);
-          endDate.setHours(12, 0, 0, 0); // Week ends at noon
+          // Get YYYY-MM-DD in local time (not UTC)
+          const startYear = startDateObj.getFullYear();
+          const startMonth = String(startDateObj.getMonth() + 1).padStart(2, '0');
+          const startDay = String(startDateObj.getDate()).padStart(2, '0');
+          const startYYYYMMDD = `${startYear}-${startMonth}-${startDay}`;
+
+          const endYear = endDateObj.getFullYear();
+          const endMonth = String(endDateObj.getMonth() + 1).padStart(2, '0');
+          const endDay = String(endDateObj.getDate()).padStart(2, '0');
+          const endYYYYMMDD = `${endYear}-${endMonth}-${endDay}`;
+
+          // Parse dates and set to ET noon
+          // Function to get ET noon for a given date
+          function getETNoon(dateString) {
+            // Create a date at noon UTC
+            const tempDate = new Date(dateString + 'T12:00:00Z');
+
+            // Check if this date is in EDT or EST
+            // EDT: Second Sunday in March to first Sunday in November
+            const year = tempDate.getUTCFullYear();
+            const month = tempDate.getUTCMonth();
+            const date = tempDate.getUTCDate();
+
+            // Simplified: March 15 - November 1 is definitely EDT
+            // More accurate would check actual DST transition dates
+            const isEDT = (month > 2 && month < 10) ||
+                         (month === 2 && date >= 15) ||
+                         (month === 10 && date <= 1);
+
+            // ET noon in UTC:
+            // EDT (UTC-4): 12:00 + 4 = 16:00 UTC = KST 01:00 AM
+            // EST (UTC-5): 12:00 + 5 = 17:00 UTC = KST 02:00 AM
+            const utcHour = isEDT ? 16 : 17;
+
+            // Create the date at ET noon
+            return new Date(Date.UTC(year, month, date, utcHour, 0, 0));
+          }
+
+          const startDate = getETNoon(startYYYYMMDD);
+          const endDate = getETNoon(endYYYYMMDD);
+
+          // Timezone verification
+          console.log('Timezone check:', {
+            startYYYYMMDD,
+            endYYYYMMDD,
+            startDate_KST: startDate.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
+            endDate_KST: endDate.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
+            startDate_ET: startDate.toLocaleString('en-US', { timeZone: 'America/New_York' }),
+            endDate_ET: endDate.toLocaleString('en-US', { timeZone: 'America/New_York' })
+          });
 
           // Calculate elapsed hours
           elapsedHours = Math.max(0, (now - startDate) / (1000 * 60 * 60));
@@ -1015,7 +1064,24 @@
 
           if (elapsedHours > 0 && totalHours > 0) {
             const tweetsPerHour = currentData.current / elapsedHours;
-            const projectedTotal = Math.round(tweetsPerHour * totalHours);
+            const remainingHours = totalHours - elapsedHours;
+            const projectedAdditional = tweetsPerHour * remainingHours;
+            const projectedTotal = Math.round(currentData.current + projectedAdditional);
+
+            console.log('Pace calculation:', {
+              current: currentData.current,
+              elapsedHours: elapsedHours.toFixed(2),
+              remainingHours: remainingHours.toFixed(2),
+              tweetsPerHour: tweetsPerHour.toFixed(4),
+              projectedAdditional: projectedAdditional.toFixed(2),
+              beforeRound: (currentData.current + projectedAdditional).toFixed(2),
+              projectedTotal: projectedTotal,
+              startDate: startDate.toString(),
+              endDate: endDate.toString(),
+              now: now.toString(),
+              totalHours: totalHours.toFixed(2)
+            });
+
             pace = projectedTotal.toLocaleString() + " tweets";
           }
         }
@@ -1061,8 +1127,32 @@
           currentData.dateRange.end &&
           currentData.dateRange.start
         ) {
-          const endDate = new Date(currentData.dateRange.end);
-          endDate.setHours(12, 0, 0, 0); // Range ends at noon
+          // Convert to YYYY-MM-DD and add ET noon time
+          const endDateObj = new Date(currentData.dateRange.end);
+          const endYear = endDateObj.getFullYear();
+          const endMonth = String(endDateObj.getMonth() + 1).padStart(2, '0');
+          const endDay = String(endDateObj.getDate()).padStart(2, '0');
+          const endYYYYMMDD = `${endYear}-${endMonth}-${endDay}`;
+          // Function to get ET noon for a given date
+          function getETNoon(dateString) {
+            const tempDate = new Date(dateString + 'T12:00:00Z');
+            const year = tempDate.getUTCFullYear();
+            const month = tempDate.getUTCMonth();
+            const date = tempDate.getUTCDate();
+
+            // Simplified EDT check: March 15 - November 1
+            const isEDT = (month > 2 && month < 10) ||
+                         (month === 2 && date >= 15) ||
+                         (month === 10 && date <= 1);
+
+            // ET noon in UTC:
+            // EDT (UTC-4): 12:00 + 4 = 16:00 UTC = KST 01:00 AM
+            // EST (UTC-5): 12:00 + 5 = 17:00 UTC = KST 02:00 AM
+            const utcHour = isEDT ? 16 : 17;
+            return new Date(Date.UTC(year, month, date, utcHour, 0, 0));
+          }
+
+          const endDate = getETNoon(endYYYYMMDD);
 
           const hoursRemaining = Math.max(
             0,
