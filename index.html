@@ -994,6 +994,7 @@
         const now = new Date();
         let elapsedHours = 0;
         let pace = "-";
+        let totalHours = 0; // Define at outer scope
 
         if (
           currentData.dateRange &&
@@ -1010,7 +1011,7 @@
           elapsedHours = Math.max(0, (now - startDate) / (1000 * 60 * 60));
 
           // Calculate total hours in the week (Friday noon to Friday noon = 7*24 = 168 hours)
-          const totalHours = (endDate - startDate) / (1000 * 60 * 60);
+          totalHours = (endDate - startDate) / (1000 * 60 * 60);
 
           if (elapsedHours > 0 && totalHours > 0) {
             const tweetsPerHour = currentData.current / elapsedHours;
@@ -1069,10 +1070,10 @@
           );
 
           if (hoursRemaining > 0 && elapsedHours > 0) {
-            // Use actual current rate instead of average
-            const currentHourlyRate = currentData.current / elapsedHours;
-            // Apply trend factor to current rate for prediction
-            const predictedRemaining = currentHourlyRate * hoursRemaining;
+            // Use average rate with trend factor applied
+            const avgHourlyRate = avgData.current / totalHours;
+            // Apply trend factor to average rate for prediction
+            const predictedRemaining = avgHourlyRate * trendFactor * hoursRemaining;
             weekEndTotal += predictedRemaining;
           }
         }
