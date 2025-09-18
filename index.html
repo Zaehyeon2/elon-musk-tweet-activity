@@ -178,23 +178,36 @@
 
       .current-time {
         border: 3px solid #ff0000 !important;
-        box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), inset 0 0 10px rgba(255, 0, 0, 0.3);
+        box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), inset 0 0 20px rgba(0, 100, 200, 0.25);
         animation: pulse 1.5s infinite;
         z-index: 100;
         position: relative;
       }
 
+      .current-time::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg,
+          rgba(0, 150, 255, 0.1) 0%,
+          rgba(0, 100, 200, 0.15) 100%);
+        pointer-events: none;
+      }
+
       @keyframes pulse {
         0% {
-          box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), inset 0 0 10px rgba(255, 0, 0, 0.3);
+          box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), inset 0 0 20px rgba(0, 100, 200, 0.25);
           border-color: #ff0000;
         }
         50% {
-          box-shadow: 0 0 30px rgba(255, 0, 0, 1), inset 0 0 15px rgba(255, 0, 0, 0.5);
+          box-shadow: 0 0 25px rgba(255, 0, 0, 1), inset 0 0 25px rgba(0, 150, 255, 0.3);
           border-color: #ff3333;
         }
         100% {
-          box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), inset 0 0 10px rgba(255, 0, 0, 0.3);
+          box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), inset 0 0 20px rgba(0, 100, 200, 0.25);
           border-color: #ff0000;
         }
       }
@@ -485,6 +498,21 @@
         </div>
       </div>
 
+      <div class="indicators" style="margin-top: 10px; background: #f0f8ff; border: 1px solid #4a90e2; border-radius: 6px; padding: 10px;">
+        <div class="indicator">
+          ⏱️ Current Pace: <span id="currentPace" class="indicator-value">-</span>
+        </div>
+        <div class="indicator">
+          🔮 Next 24h Prediction: <span id="next24hPrediction" class="indicator-value">-</span>
+        </div>
+        <div class="indicator">
+          🎯 End of Range: <span id="weekEndPrediction" class="indicator-value">-</span>
+        </div>
+        <div class="indicator">
+          📊 Trend: <span id="trendIndicator" class="indicator-value">-</span>
+        </div>
+      </div>
+
       <div class="heatmaps-wrapper">
         <div class="heatmap-section">
           <h3 class="heatmap-title">Current Week</h3>
@@ -574,7 +602,7 @@
       // Parse Twitter date format and convert to ET
       function parseTwitterDate(dateStr) {
         try {
-          // Handle formats like "Sep 12, 12:00:37 AM EDT"
+          // Handle formats like "MMM DD, HH:MM:SS AM/PM EDT/EST"
           let cleanDate = dateStr.trim();
           let isEDT = cleanDate.includes(" EDT");
           let isEST = cleanDate.includes(" EST");
@@ -582,12 +610,13 @@
           // Remove timezone suffix
           cleanDate = cleanDate.replace(" EDT", "").replace(" EST", "");
 
-          // Add current year if missing (2025 for current data)
+          // Add current year if missing
           if (!cleanDate.match(/\b20\d{2}\b/)) {
             const parts = cleanDate.split(", ");
             if (parts.length >= 2) {
-              // Insert year after month and day: "Sep 12" -> "Sep 12, 2025"
-              cleanDate = parts[0] + ", 2025, " + parts.slice(1).join(", ");
+              // Use current year for dates without year
+              const currentYear = new Date().getFullYear();
+              cleanDate = parts[0] + ", " + currentYear + ", " + parts.slice(1).join(", ");
             }
           }
 
@@ -610,10 +639,10 @@
       }
 
       // Parse CSV data with optimization for large files
-      function parseCSV(csvText, maxRows = 5000) {
+      function parseCSV(csvText, weeksToLoad = 5) {
         const data = [];
 
-        console.log(`Processing CSV...`);
+        console.log(`Processing CSV for last ${weeksToLoad} weeks...`);
 
         // Simple approach: Find all lines ending with EDT or EST
         // This avoids multiline parsing issues
@@ -629,15 +658,17 @@
 
         console.log(`Found ${tweetLines.length} tweets by EDT/EST pattern`);
 
-        // Take only the last N tweets if maxRows is specified
-        let linesToProcess = tweetLines;
-        if (maxRows && tweetLines.length > maxRows) {
-          linesToProcess = tweetLines.slice(-maxRows);
-          console.log(`Taking last ${maxRows} tweets from ${tweetLines.length} total`);
-        }
+        // Process from the end (newest tweets first) to get accurate dates
+        const now = new Date();
+        const cutoffDate = new Date(now);
+        cutoffDate.setDate(cutoffDate.getDate() - (weeksToLoad * 7));
 
-        // Parse each tweet line
-        linesToProcess.forEach(line => {
+        let currentYear = now.getFullYear();
+        let lastMonth = 13; // Start with invalid month to detect year change
+
+        // Process tweets in reverse order (newest first)
+        for (let i = tweetLines.length - 1; i >= 0; i--) {
+          const line = tweetLines[i];
           // Extract the date/time part (everything after the last comma before EDT/EST)
           const edtIndex = line.lastIndexOf('EDT"');
           const estIndex = line.lastIndexOf('EST"');
@@ -651,15 +682,38 @@
             if (lastQuoteBeforeTime > 0) {
               const dateTimeStr = beforeTime.substring(lastQuoteBeforeTime + 1) + (edtIndex > 0 ? 'EDT' : 'EST');
 
-              // Simple tweet object - we only need the created_at for the heatmap
-              data.push({
-                id: null,
-                text: null,
-                created_at: dateTimeStr
-              });
+              // Parse date with smart year detection
+              const monthMatch = dateTimeStr.match(/^(\w+) (\d+)/);
+              if (monthMatch) {
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const monthIndex = monthNames.indexOf(monthMatch[1]);
+
+                // Detect year change when going backwards
+                if (monthIndex > lastMonth && lastMonth !== 13) {
+                  currentYear--;
+                }
+                lastMonth = monthIndex;
+              }
+
+              // Create date string with estimated year
+              const dateWithYear = dateTimeStr.replace(/^(\w+ \d+)/, `$1, ${currentYear}`);
+
+              // Parse and check if within range
+              const tweetDate = parseTwitterDate(dateWithYear);
+              if (tweetDate && tweetDate >= cutoffDate && tweetDate <= now) {
+                // Add to beginning since we're processing in reverse
+                data.unshift({
+                  id: null,
+                  text: null,
+                  created_at: dateWithYear
+                });
+              } else if (tweetDate && tweetDate < cutoffDate) {
+                // Stop processing if we've gone too far back
+                break;
+              }
             }
           }
-        });
+        }
 
         console.log(`Parsed ${data.length} tweets`);
 
@@ -667,11 +721,14 @@
         console.log("Sample parsed tweets:", data.slice(0, 5));
         console.log("Last few parsed tweets:", data.slice(-5));
 
-        // Count Sep 5 tweets in parsed data for comparison
-        const sep5Count = data.filter(
-          (tweet) => tweet.created_at && tweet.created_at.includes("Sep 5")
-        ).length;
-        console.log("Sep 5 tweets in parsed data:", sep5Count);
+        // Debug: Count tweets for a sample date
+        if (data.length > 0) {
+          const sampleDate = data[0].created_at ? data[0].created_at.split(',')[0] : '';
+          const sampleCount = data.filter(
+            (tweet) => tweet.created_at && tweet.created_at.includes(sampleDate)
+          ).length;
+          console.log(`Sample date (${sampleDate}) tweets:`, sampleCount);
+        }
 
         return data;
       }
@@ -762,6 +819,13 @@
           if (date) {
             validDates++;
 
+            // Filter out any future dates first
+            const now = new Date();
+            if (date > now) {
+              filteredOut++;
+              return;
+            }
+
             // Apply date range and noon filtering
             if (start && end) {
               // Create date strings for comparison (YYYY-MM-DD format)
@@ -771,8 +835,7 @@
               const tweetDateStr = `${tweetYear}-${tweetMonth}-${tweetDay}`;
               const tweetHour = date.getHours();
 
-              // For start date (Friday): include only from noon onwards
-              // Sep 12 is the start date, so we exclude before noon
+              // For start date: include only from noon onwards
               if (tweetDateStr === startDate) {
                 if (tweetHour < 12) {
                   noonFiltered++;
@@ -866,6 +929,91 @@
           peakHour,
           mostActiveDay,
           dateRange: { start: actualStart, end: actualEnd },
+        };
+      }
+
+      // Prediction functions
+      function calculatePredictions(currentData, avgData) {
+        if (!currentData || !avgData) return { next24h: 0, endOfRange: 0, trend: 'stable', pace: '-' };
+
+        // Calculate current pace and projection
+        const now = new Date();
+        let elapsedHours = 0;
+        let pace = '-';
+
+        if (currentData.dateRange && currentData.dateRange.start && currentData.dateRange.end) {
+          const startDate = new Date(currentData.dateRange.start);
+          startDate.setHours(12, 0, 0, 0); // Week starts at noon
+
+          const endDate = new Date(currentData.dateRange.end);
+          endDate.setHours(12, 0, 0, 0); // Week ends at noon
+
+          // Calculate elapsed hours
+          elapsedHours = Math.max(0, (now - startDate) / (1000 * 60 * 60));
+
+          // Calculate total hours in the week (Friday noon to Friday noon = 7*24 = 168 hours)
+          const totalHours = (endDate - startDate) / (1000 * 60 * 60);
+
+          if (elapsedHours > 0 && totalHours > 0) {
+            const tweetsPerHour = currentData.current / elapsedHours;
+            const projectedTotal = Math.round(tweetsPerHour * totalHours);
+            pace = projectedTotal.toLocaleString() + ' tweets';
+          }
+        }
+
+        // Calculate trend factor (current week vs average)
+        const trendFactor = avgData.current > 0 ? currentData.current / avgData.current : 1;
+
+        // Next 24 hours prediction
+        const nowET = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+        let next24hTotal = 0;
+
+        // Calculate for next 24 hours based on average and trend
+        if (currentData.dateRange && currentData.dateRange.start) {
+          const startDate = new Date(currentData.dateRange.start);
+          const daysSinceStart = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+
+          for (let i = 0; i < 24; i++) {
+            const futureHour = (nowET.getHours() + i) % 24;
+            const futureDayOffset = Math.floor((nowET.getHours() + i) / 24);
+            const futureDayIndex = (daysSinceStart + futureDayOffset) % 8; // Use 8-day cycle
+
+            if (avgData.grid[futureHour] && avgData.grid[futureHour][futureDayIndex]) {
+              // Apply trend factor to average
+              next24hTotal += avgData.grid[futureHour][futureDayIndex] * trendFactor;
+            }
+          }
+        }
+
+        // End of range prediction - calculate remaining hours until range ends
+        let weekEndTotal = currentData.current; // Start with current total
+
+        if (currentData.dateRange && currentData.dateRange.end && currentData.dateRange.start) {
+          const endDate = new Date(currentData.dateRange.end);
+          endDate.setHours(12, 0, 0, 0); // Range ends at noon
+
+          const hoursRemaining = Math.max(0, (endDate - now) / (1000 * 60 * 60));
+
+          if (hoursRemaining > 0 && elapsedHours > 0) {
+            // Use actual current rate instead of average
+            const currentHourlyRate = currentData.current / elapsedHours;
+            // Apply trend factor to current rate for prediction
+            const predictedRemaining = currentHourlyRate * hoursRemaining;
+            weekEndTotal += predictedRemaining;
+          }
+        }
+
+        // Determine trend
+        let trend = 'stable';
+        if (trendFactor > 1.15) trend = '⬆️ Up ' + Math.round((trendFactor - 1) * 100) + '%';
+        else if (trendFactor < 0.85) trend = '⬇️ Down ' + Math.round((1 - trendFactor) * 100) + '%';
+        else trend = '➡️ Stable';
+
+        return {
+          pace: pace,
+          next24h: Math.round(next24hTotal),
+          endOfRange: Math.round(weekEndTotal),
+          trend: trend
         };
       }
 
@@ -1194,7 +1342,7 @@
       async function loadData() {
         const container = document.getElementById("heatmapContainer");
         container.innerHTML =
-          '<div class="loading"><div class="spinner"></div>Loading tweet data (최신 5000개 로드 중)...</div>';
+          '<div class="loading"><div class="spinner"></div>Loading tweet data (최근 5주 데이터 로드 중)...</div>';
 
         // Try corsproxy.io only
         const methods = [
@@ -1231,8 +1379,8 @@
               throw new Error("Invalid CSV format");
             }
 
-            // Parse only the last 5000 rows for better performance (최신 데이터)
-            const tweets = parseCSV(csvText, 5000);
+            // Parse last 5 weeks of data
+            const tweets = parseCSV(csvText, 5);
 
             if (tweets.length === 0) {
               throw new Error("No valid tweets found");
@@ -1257,6 +1405,13 @@
             // Calculate and render 4-week average
             const avgData = calculate4WeekAverage(tweets, startDate, endDate);
             renderAverageHeatmap(avgData);
+
+            // Calculate and display predictions
+            const predictions = calculatePredictions(currentData, avgData);
+            document.getElementById("currentPace").textContent = predictions.pace;
+            document.getElementById("next24hPrediction").textContent = predictions.next24h.toLocaleString() + " tweets";
+            document.getElementById("weekEndPrediction").textContent = predictions.endOfRange.toLocaleString() + " tweets";
+            document.getElementById("trendIndicator").textContent = predictions.trend;
 
             // Update last refresh time and start countdown
             updateLastRefreshTime();
@@ -1363,49 +1518,84 @@
         const ranges = [];
         const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-        // Specific date ranges following the pattern
-        const specificRanges = [
-          { start: new Date('2025-09-05'), end: new Date('2025-09-12') }, // Fri-Fri
-          { start: new Date('2025-09-09'), end: new Date('2025-09-16') }, // Tue-Tue
-          { start: new Date('2025-09-12'), end: new Date('2025-09-19') }, // Fri-Fri
-          { start: new Date('2025-09-16'), end: new Date('2025-09-23') }, // Tue-Tue
-          { start: new Date('2025-09-19'), end: new Date('2025-09-26') }, // Fri-Fri
-        ];
-
-        // Add any additional Friday-Friday ranges before and after
+        // Generate both Friday-to-Friday and Tuesday-to-Tuesday ranges
+        const specificRanges = [];
         const currentDate = new Date();
 
-        // Add earlier ranges if needed (before Sep 5)
-        let earliestFriday = new Date('2025-09-05');
-        while (earliestFriday > minDate) {
-          const prevFriday = new Date(earliestFriday);
-          prevFriday.setDate(prevFriday.getDate() - 7);
-
-          if (prevFriday < minDate) break;
-
-          specificRanges.unshift({
-            start: new Date(prevFriday),
-            end: new Date(earliestFriday)
-          });
-
-          earliestFriday = prevFriday;
+        // Find the most recent Friday
+        let recentFriday = new Date(currentDate);
+        while (recentFriday.getDay() !== 5) { // 5 = Friday
+          recentFriday.setDate(recentFriday.getDate() - 1);
         }
 
-        // Add later ranges if needed (after Sep 26)
-        let latestFriday = new Date('2025-09-26');
-        while (latestFriday < currentDate || latestFriday < maxDate) {
-          const nextFriday = new Date(latestFriday);
-          nextFriday.setDate(nextFriday.getDate() + 7);
+        // Find the most recent Tuesday
+        let recentTuesday = new Date(currentDate);
+        while (recentTuesday.getDay() !== 2) { // 2 = Tuesday
+          recentTuesday.setDate(recentTuesday.getDate() - 1);
+        }
 
+        // Add current ongoing week ranges
+        // Friday range
+        let nextFriday = new Date(recentFriday);
+        if (currentDate.getDay() !== 5 || (currentDate.getDay() === 5 && currentDate.getHours() < 12)) {
+          while (nextFriday <= currentDate) {
+            nextFriday.setDate(nextFriday.getDate() + 7);
+          }
           specificRanges.push({
-            start: new Date(latestFriday),
-            end: new Date(nextFriday)
+            start: new Date(recentFriday),
+            end: new Date(nextFriday),
+            type: 'friday'
           });
-
-          latestFriday = nextFriday;
-
-          if (latestFriday > currentDate && latestFriday > maxDate) break;
         }
+
+        // Tuesday range
+        let nextTuesday = new Date(recentTuesday);
+        if (currentDate.getDay() !== 2 || (currentDate.getDay() === 2 && currentDate.getHours() < 12)) {
+          while (nextTuesday <= currentDate) {
+            nextTuesday.setDate(nextTuesday.getDate() + 7);
+          }
+          specificRanges.push({
+            start: new Date(recentTuesday),
+            end: new Date(nextTuesday),
+            type: 'tuesday'
+          });
+        }
+
+        // Generate past ranges for both Friday and Tuesday
+        let startFriday = new Date(recentFriday);
+        let startTuesday = new Date(recentTuesday);
+
+        // Go back 8 weeks for each pattern
+        for (let i = 0; i < 8; i++) {
+          // Friday ranges
+          const endFriday = new Date(startFriday);
+          startFriday = new Date(startFriday);
+          startFriday.setDate(startFriday.getDate() - 7);
+
+          if (startFriday >= minDate && startFriday <= maxDate) {
+            specificRanges.push({
+              start: new Date(startFriday),
+              end: new Date(endFriday),
+              type: 'friday'
+            });
+          }
+
+          // Tuesday ranges
+          const endTuesday = new Date(startTuesday);
+          startTuesday = new Date(startTuesday);
+          startTuesday.setDate(startTuesday.getDate() - 7);
+
+          if (startTuesday >= minDate && startTuesday <= maxDate) {
+            specificRanges.push({
+              start: new Date(startTuesday),
+              end: new Date(endTuesday),
+              type: 'tuesday'
+            });
+          }
+        }
+
+        // Sort ranges by start date (most recent first)
+        specificRanges.sort((a, b) => b.start - a.start);
 
         // Process each range - only include ranges that have started (noon ET on start date)
         specificRanges.forEach(range => {
@@ -1438,8 +1628,12 @@
           }
         });
 
-        // Add ranges to dropdown in reverse order (most recent first)
-        ranges.reverse();
+        // Sort ranges by start date in descending order (most recent first)
+        ranges.sort((a, b) => {
+          const dateA = new Date(a.startDate);
+          const dateB = new Date(b.startDate);
+          return dateB - dateA;
+        });
 
         // Add all ranges to dropdown
         ranges.forEach((range) => {
@@ -1468,7 +1662,7 @@
           }
         });
 
-        // Select the earliest ending ongoing range (Sep 12-19 before Sep 16-23)
+        // Select the earliest ending ongoing range
         if (earliestEndingOngoingIndex > 0) {
           select.options[earliestEndingOngoingIndex].selected = true;
         } else if (ranges.length > 0) {
@@ -1492,6 +1686,13 @@
           // Recalculate 4-week average
           const avgData = calculate4WeekAverage(rawTweets, startDate, endDate);
           renderAverageHeatmap(avgData);
+
+          // Recalculate predictions
+          const predictions = calculatePredictions(currentData, avgData);
+          document.getElementById("currentPace").textContent = predictions.pace;
+          document.getElementById("next24hPrediction").textContent = predictions.next24h.toLocaleString() + " tweets";
+          document.getElementById("weekEndPrediction").textContent = predictions.weekEnd.toLocaleString() + " tweets";
+          document.getElementById("trendIndicator").textContent = predictions.trend;
         } else if (selectedValue) {
           // If no raw data available, load from API
           loadData();
@@ -1522,8 +1723,8 @@
         reader.onload = function (e) {
           try {
             const csvText = e.target.result;
-            // Parse only the last 5000 rows for better performance
-            const tweets = parseCSV(csvText, 5000);
+            // Parse last 5 weeks of data
+            const tweets = parseCSV(csvText, 5);
 
             if (tweets.length === 0) {
               alert("No valid tweets found in the uploaded file");
@@ -1542,6 +1743,13 @@
             // Calculate and render 4-week average
             const avgData = calculate4WeekAverage(tweets, startDate, endDate);
             renderAverageHeatmap(avgData);
+
+            // Calculate and display predictions
+            const predictions = calculatePredictions(currentData, avgData);
+            document.getElementById("currentPace").textContent = predictions.pace;
+            document.getElementById("next24hPrediction").textContent = predictions.next24h.toLocaleString() + " tweets";
+            document.getElementById("weekEndPrediction").textContent = predictions.endOfRange.toLocaleString() + " tweets";
+            document.getElementById("trendIndicator").textContent = predictions.trend;
           } catch (error) {
             alert("Error parsing CSV file: " + error.message);
           }
