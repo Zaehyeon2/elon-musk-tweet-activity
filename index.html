@@ -1863,6 +1863,9 @@
       function populateWeekRanges(tweets = null) {
         const select = document.getElementById("weekRange");
 
+        // Save current selection before clearing
+        const currentSelection = select.value;
+
         // Clear existing options
         select.innerHTML = '<option value="">Select a week range...</option>';
 
@@ -2061,12 +2064,28 @@
           }
         });
 
-        // Select the earliest ending ongoing range
-        if (earliestEndingOngoingIndex > 0) {
-          select.options[earliestEndingOngoingIndex].selected = true;
-        } else if (ranges.length > 0) {
-          // If all ranges are completed, select the most recent
-          select.options[1].selected = true;
+        // Restore previous selection if it exists, otherwise use default
+        let selectionRestored = false;
+
+        if (currentSelection) {
+          // Try to restore the previous selection
+          for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === currentSelection) {
+              select.options[i].selected = true;
+              selectionRestored = true;
+              break;
+            }
+          }
+        }
+
+        // If no previous selection or it doesn't exist anymore, use default
+        if (!selectionRestored) {
+          if (earliestEndingOngoingIndex > 0) {
+            select.options[earliestEndingOngoingIndex].selected = true;
+          } else if (ranges.length > 0) {
+            // If all ranges are completed, select the most recent
+            select.options[1].selected = true;
+          }
         }
       }
 
