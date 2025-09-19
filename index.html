@@ -628,6 +628,69 @@
         }
       }
 
+      // ET timezone formatter with weekday
+      const etFormatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/New_York",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        weekday: "short",
+        hour12: false,
+      });
+
+      // Get ET date components efficiently
+      function getETComponents(date) {
+        const parts = etFormatter.formatToParts(date);
+        const result = {};
+        parts.forEach((part) => {
+          if (part.type !== "literal") {
+            result[part.type] = part.value;
+          }
+        });
+
+        // Convert weekday name to number
+        const weekdayMap = {
+          'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3,
+          'Thu': 4, 'Fri': 5, 'Sat': 6
+        };
+
+        return {
+          year: parseInt(result.year),
+          month: parseInt(result.month) - 1, // JS months are 0-indexed
+          day: parseInt(result.day),
+          hour: parseInt(result.hour),
+          minute: parseInt(result.minute),
+          second: parseInt(result.second),
+          dayOfWeek: weekdayMap[result.weekday] || 0,
+        };
+      }
+
+      // Create a date at ET noon from YYYY-MM-DD components
+      function createETNoonDate(year, month, day) {
+        // Check if date is in EDT or EST
+        // EDT: Second Sunday in March to first Sunday in November (roughly)
+        // Simplified check: March 14 - November 7 is usually EDT
+        const isEDT = (month > 3 && month < 11) ||
+                     (month === 3 && day >= 14) ||
+                     (month === 11 && day <= 7);
+
+        // ET noon in UTC:
+        // EDT (UTC-4): 12:00 PM ET = 16:00 UTC
+        // EST (UTC-5): 12:00 PM ET = 17:00 UTC
+        const utcHour = isEDT ? 16 : 17;
+
+        return new Date(Date.UTC(year, month - 1, day, utcHour, 0, 0));
+      }
+
+      // Parse YYYY-MM-DD string and create ET noon date
+      function parseETNoonDate(dateString) {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return createETNoonDate(year, month, day);
+      }
+
       // Parse Twitter date format and convert to ET
       function parseTwitterDate(dateStr) {
         try {
@@ -643,8 +706,9 @@
           if (!cleanDate.match(/\b20\d{2}\b/)) {
             const parts = cleanDate.split(", ");
             if (parts.length >= 2) {
-              // Use current year for dates without year
-              const currentYear = new Date().getFullYear();
+              // Use ET current year for dates without year
+              const nowET = getETComponents(new Date());
+              const currentYear = nowET.year;
               cleanDate =
                 parts[0] +
                 ", " +
@@ -654,18 +718,66 @@
             }
           }
 
-          // Parse the date string directly as Eastern Time
-          // The date is already in ET (EDT or EST), so we parse it as-is
-          let date = new Date(cleanDate);
+          // Parse the date components to create a proper ET date
+          // Extract month, day, year, time parts
+          const dateMatch = cleanDate.match(/^(\w+)\s+(\d+),\s+(\d{4}),\s+(\d{1,2}):(\d{2}):(\d{2})\s+(AM|PM)$/);
 
-          if (isNaN(date.getTime())) {
-            console.log("Failed to parse date:", cleanDate);
+          if (!dateMatch) {
+            console.log("Failed to match date pattern:", cleanDate);
             return null;
           }
 
-          // The date is already parsed correctly as ET
-          // No need for timezone conversion since the source is already in ET
-          return date;
+          const [_, monthStr, dayStr, yearStr, hourStr, minuteStr, secondStr, ampm] = dateMatch;
+
+          // Convert month name to number
+          const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const month = monthNames.indexOf(monthStr.substring(0, 3)) + 1; // 1-based month
+          if (month === 0) {
+            console.log("Invalid month:", monthStr);
+            return null;
+          }
+
+          const day = parseInt(dayStr);
+          const year = parseInt(yearStr);
+          let hour = parseInt(hourStr);
+          const minute = parseInt(minuteStr);
+          const second = parseInt(secondStr);
+
+          // Convert 12-hour to 24-hour format
+          if (ampm === "PM" && hour !== 12) {
+            hour += 12;
+          } else if (ampm === "AM" && hour === 12) {
+            hour = 0;
+          }
+
+          // Create a UTC date from ET components
+          // EDT is UTC-4 (so ET hour + 4 = UTC hour)
+          // EST is UTC-5 (so ET hour + 5 = UTC hour)
+          const utcOffsetHours = isEDT ? 4 : 5;
+
+          // Create the date in UTC by adjusting the ET hour
+          const utcDate = new Date(Date.UTC(
+            year,
+            month - 1,  // JavaScript months are 0-based
+            day,
+            hour + utcOffsetHours,  // Convert ET hour to UTC
+            minute,
+            second
+          ));
+
+          // Debug log for parsed dates
+          if (Math.random() < 0.01) { // Log 1% of dates to avoid spam
+            console.log("parseTwitterDate:", {
+              input: dateStr,
+              parsed: cleanDate,
+              isEDT,
+              components: { year, month, day, hour, minute, second, ampm },
+              utcDate: utcDate.toISOString(),
+              etCheck: getETComponents(utcDate)
+            });
+          }
+
+          return utcDate;
         } catch (error) {
           console.log("Date parsing error:", error, "for:", dateStr);
           return null;
@@ -695,9 +807,11 @@
         // Process from the end (newest tweets first) to get accurate dates
         const now = new Date();
         const cutoffDate = new Date(now);
-        cutoffDate.setDate(cutoffDate.getDate() - weeksToLoad * 7);
+        cutoffDate.setTime(cutoffDate.getTime() - (weeksToLoad * 7 * 24 * 60 * 60 * 1000));
 
-        let currentYear = now.getFullYear();
+        // Use ET components to get the current year
+        const nowET = getETComponents(now);
+        let currentYear = nowET.year;
         let lastMonth = 13; // Start with invalid month to detect year change
 
         // Process tweets in reverse order (newest first)
@@ -752,7 +866,8 @@
 
               // Parse and check if within range
               const tweetDate = parseTwitterDate(dateWithYear);
-              if (tweetDate && tweetDate >= cutoffDate && tweetDate <= now) {
+              if (tweetDate && tweetDate >= cutoffDate) {
+                // Remove the upper bound check to include all recent tweets
                 // Add to beginning since we're processing in reverse
                 data.unshift({
                   id: null,
@@ -773,6 +888,21 @@
         console.log("Sample parsed tweets:", data.slice(0, 5));
         console.log("Last few parsed tweets:", data.slice(-5));
 
+        // Debug: Check for today's tweets
+        const today = new Date();
+        const todayET = getETComponents(today);
+        const todayStr = `${todayET.year}-${String(todayET.month + 1).padStart(2, '0')}-${String(todayET.day).padStart(2, '0')}`;
+        const todayTweets = data.filter(tweet => {
+          const tweetDate = parseTwitterDate(tweet.created_at);
+          if (tweetDate) {
+            const tweetET = getETComponents(tweetDate);
+            const tweetStr = `${tweetET.year}-${String(tweetET.month + 1).padStart(2, '0')}-${String(tweetET.day).padStart(2, '0')}`;
+            return tweetStr === todayStr;
+          }
+          return false;
+        });
+        console.log(`Today's tweets (${todayStr}):`, todayTweets.length, todayTweets.slice(0, 3));
+
         // Debug: Count tweets for a sample date
         if (data.length > 0) {
           const sampleDate = data[0].created_at
@@ -782,6 +912,23 @@
             (tweet) => tweet.created_at && tweet.created_at.includes(sampleDate)
           ).length;
           console.log(`Sample date (${sampleDate}) tweets:`, sampleCount);
+
+          // Debug: Show date range
+          const firstTweet = data[0];
+          const lastTweet = data[data.length - 1];
+          if (firstTweet && lastTweet) {
+            const firstDate = parseTwitterDate(firstTweet.created_at);
+            const lastDate = parseTwitterDate(lastTweet.created_at);
+            if (firstDate && lastDate) {
+              const firstET = getETComponents(firstDate);
+              const lastET = getETComponents(lastDate);
+              console.log("Tweet date range:", {
+                first: `${firstET.year}-${firstET.month+1}-${firstET.day} ${firstET.hour}:${firstET.minute}`,
+                last: `${lastET.year}-${lastET.month+1}-${lastET.day} ${lastET.hour}:${lastET.minute}`,
+                totalTweets: data.length
+              });
+            }
+          }
         }
 
         return data;
@@ -807,58 +954,26 @@
         return `${hour - 12} PM`;
       }
 
-      // ET timezone formatter
-      const etFormatter = new Intl.DateTimeFormat("en-US", {
-        timeZone: "America/New_York",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-      });
-
-      // Get ET date components efficiently
-      function getETComponents(date) {
-        const parts = etFormatter.formatToParts(date);
-        const result = {};
-        parts.forEach((part) => {
-          if (part.type !== "literal") {
-            result[part.type] = part.value;
-          }
-        });
-
-        // Calculate day of week in ET
-        const etDate = new Date(
-          `${result.year}-${result.month}-${result.day}T12:00:00-05:00`
-        );
-
-        return {
-          year: parseInt(result.year),
-          month: parseInt(result.month) - 1, // JS months are 0-indexed
-          day: parseInt(result.day),
-          hour: parseInt(result.hour),
-          minute: parseInt(result.minute),
-          second: parseInt(result.second),
-          dayOfWeek: etDate.getDay(),
-        };
-      }
-
       // Process data into heatmap
       function processData(tweets, startDate, endDate, rangeType = "friday") {
         const hours = Array.from({ length: 24 }, (_, i) => formatHour(i));
 
         let validTweets = 0;
-        const start = startDate ? new Date(startDate + "T00:00:00") : null; // Start at beginning of start date
-        const end = endDate ? new Date(endDate + "T23:59:59") : null; // End at end of end date
+
+        // Parse dates as ET noon (12:00 PM ET)
+        let actualStart = null;
+        let actualEnd = null;
+
+        if (startDate && endDate) {
+          // Use common function to create ET noon dates
+          actualStart = parseETNoonDate(startDate);
+          actualEnd = parseETNoonDate(endDate);
+        }
 
         // Determine the actual date range and days to show
-        let actualStart, actualEnd, days, grid;
+        let days, grid;
 
-        if (start && end) {
-          actualStart = new Date(start);
-          actualEnd = new Date(end);
+        if (actualStart && actualEnd) {
 
           // Always 8 days for noon-to-noon ranges
           const dayCount = 8;
@@ -869,13 +984,27 @@
 
           // Generate day labels based on the actual date range
           for (let i = 0; i < dayCount; i++) {
-            const currentDate = new Date(actualStart);
-            currentDate.setDate(actualStart.getDate() + i);
+            // Add days to the start date properly in ET
+            const currentDate = new Date(actualStart.getTime() + (i * 24 * 60 * 60 * 1000));
 
             // Get day of week in ET
             const etComponents = getETComponents(currentDate);
             const dayOfWeek = etComponents.dayOfWeek;
             days.push(dayNames[dayOfWeek]);
+
+            // Debug log for first few days
+            if (i < 3) {
+              console.log(`Day ${i}:`, {
+                currentDate: currentDate.toString(),
+                etComponents: {
+                  year: etComponents.year,
+                  month: etComponents.month + 1,
+                  day: etComponents.day,
+                  dayOfWeek: etComponents.dayOfWeek,
+                  dayName: dayNames[dayOfWeek]
+                }
+              });
+            }
           }
 
           console.log("=== DATE RANGE DEBUG ===");
@@ -885,10 +1014,11 @@
           console.log("Parsed end:", actualEnd);
           console.log("Day count:", dayCount);
           console.log("Generated days for range:", days);
+          const startET = getETComponents(actualStart);
           console.log(
             "Start date day of week:",
-            actualStart.getDay(),
-            "(" + dayNames[actualStart.getDay()] + ")"
+            startET.dayOfWeek,
+            "(" + dayNames[startET.dayOfWeek] + ")"
           );
 
           // Initialize grid based on actual day count
@@ -914,21 +1044,25 @@
           if (date) {
             validDates++;
 
-            // Filter out any future dates first
+            // Filter out dates that are more than 1 day in the future
+            // This allows for timezone differences while still filtering obvious errors
             const now = new Date();
-            if (date > now) {
+            const tomorrow = new Date(now);
+            tomorrow.setTime(tomorrow.getTime() + (24 * 60 * 60 * 1000));
+            if (date > tomorrow) {
               filteredOut++;
               return;
             }
 
             // Apply date range and noon filtering
-            if (start && end) {
+            if (actualStart && actualEnd) {
               // Create date strings for comparison (YYYY-MM-DD format)
-              const tweetYear = date.getFullYear();
-              const tweetMonth = String(date.getMonth() + 1).padStart(2, "0");
-              const tweetDay = String(date.getDate()).padStart(2, "0");
+              const tweetET = getETComponents(date);
+              const tweetYear = tweetET.year;
+              const tweetMonth = String(tweetET.month + 1).padStart(2, "0");
+              const tweetDay = String(tweetET.day).padStart(2, "0");
               const tweetDateStr = `${tweetYear}-${tweetMonth}-${tweetDay}`;
-              const tweetHour = date.getHours();
+              const tweetHour = tweetET.hour;
 
               // For start date: include only from noon onwards
               if (tweetDateStr === startDate) {
@@ -957,24 +1091,30 @@
               }
             }
 
-            const hour = date.getHours();
+            const dateET = getETComponents(date);
+            const hour = dateET.hour;
 
-            if (start && end) {
+            if (actualStart && actualEnd) {
               // Calculate which day column this date falls into
-              // Create date at midnight for accurate day calculation
-              const tweetMidnight = new Date(
-                date.getFullYear(),
-                date.getMonth(),
-                date.getDate()
-              );
-              const startMidnight = new Date(
-                actualStart.getFullYear(),
-                actualStart.getMonth(),
-                actualStart.getDate()
-              );
+              // Use ET components for accurate day calculation
+              const tweetET = getETComponents(date);
+              const startET = getETComponents(actualStart);
+
+              // Create YYYY-MM-DD strings for both dates
+              const tweetDateStr = `${tweetET.year}-${String(tweetET.month + 1).padStart(2, '0')}-${String(tweetET.day).padStart(2, '0')}`;
+              const startDateStr = `${startET.year}-${String(startET.month + 1).padStart(2, '0')}-${String(startET.day).padStart(2, '0')}`;
+
+              // Create dates at ET midnight (start of day) for accurate day difference
+              // Use common function that handles EDT/EST properly
+              const tweetDayStart = parseETNoonDate(tweetDateStr);
+              const startDayStart = parseETNoonDate(startDateStr);
+
+              // Adjust to midnight by subtracting 12 hours from noon
+              tweetDayStart.setTime(tweetDayStart.getTime() - (12 * 60 * 60 * 1000));
+              startDayStart.setTime(startDayStart.getTime() - (12 * 60 * 60 * 1000));
 
               const daysDiff = Math.floor(
-                (tweetMidnight - startMidnight) / (1000 * 60 * 60 * 24)
+                (tweetDayStart - startDayStart) / (1000 * 60 * 60 * 24)
               );
 
               // Allow daysDiff from 0 to 7 (8 days total)
@@ -984,7 +1124,8 @@
               }
             } else {
               // Default behavior - map to day of week
-              const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+              const dateET = getETComponents(date);
+              const dayOfWeek = dateET.dayOfWeek; // 0 = Sunday, 1 = Monday, etc.
               const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday = 0
 
               if (adjustedDay >= 0 && adjustedDay < days.length) {
@@ -1020,7 +1161,16 @@
         console.log("Filtered out by date range:", filteredOut);
         console.log("Filtered out by noon rule:", noonFiltered);
         console.log("Final valid tweets:", validTweets);
-        console.log("Date range:", actualStart, "to", actualEnd);
+        if (actualStart && actualEnd) {
+          const startET = getETComponents(actualStart);
+          const endET = getETComponents(actualEnd);
+          console.log("Date range:", {
+            start: `${startET.year}-${startET.month+1}-${startET.day}`,
+            end: `${endET.year}-${endET.month+1}-${endET.day}`,
+            startDate: startDate,
+            endDate: endDate
+          });
+        }
 
         return {
           grid,
@@ -1051,54 +1201,26 @@
           currentData.dateRange.start &&
           currentData.dateRange.end
         ) {
-          // Convert date objects to YYYY-MM-DD format
-          const startDateObj = new Date(currentData.dateRange.start);
-          const endDateObj = new Date(currentData.dateRange.end);
+          // Handle both string and Date object formats
+          let startYYYYMMDD, endYYYYMMDD;
 
-          // Get YYYY-MM-DD in local time (not UTC)
-          const startYear = startDateObj.getFullYear();
-          const startMonth = String(startDateObj.getMonth() + 1).padStart(
-            2,
-            "0"
-          );
-          const startDay = String(startDateObj.getDate()).padStart(2, "0");
-          const startYYYYMMDD = `${startYear}-${startMonth}-${startDay}`;
-
-          const endYear = endDateObj.getFullYear();
-          const endMonth = String(endDateObj.getMonth() + 1).padStart(2, "0");
-          const endDay = String(endDateObj.getDate()).padStart(2, "0");
-          const endYYYYMMDD = `${endYear}-${endMonth}-${endDay}`;
-
-          // Parse dates and set to ET noon
-          // Function to get ET noon for a given date
-          function getETNoon(dateString) {
-            // Create a date at noon UTC
-            const tempDate = new Date(dateString + "T12:00:00Z");
-
-            // Check if this date is in EDT or EST
-            // EDT: Second Sunday in March to first Sunday in November
-            const year = tempDate.getUTCFullYear();
-            const month = tempDate.getUTCMonth();
-            const date = tempDate.getUTCDate();
-
-            // Simplified: March 15 - November 1 is definitely EDT
-            // More accurate would check actual DST transition dates
-            const isEDT =
-              (month > 2 && month < 10) ||
-              (month === 2 && date >= 15) ||
-              (month === 10 && date <= 1);
-
-            // ET noon in UTC:
-            // EDT (UTC-4): 12:00 + 4 = 16:00 UTC = KST 01:00 AM
-            // EST (UTC-5): 12:00 + 5 = 17:00 UTC = KST 02:00 AM
-            const utcHour = isEDT ? 16 : 17;
-
-            // Create the date at ET noon
-            return new Date(Date.UTC(year, month, date, utcHour, 0, 0));
+          if (typeof currentData.dateRange.start === "string") {
+            startYYYYMMDD = currentData.dateRange.start;
+          } else {
+            const startET = getETComponents(new Date(currentData.dateRange.start));
+            startYYYYMMDD = `${startET.year}-${String(startET.month + 1).padStart(2, '0')}-${String(startET.day).padStart(2, '0')}`;
           }
 
-          const startDate = getETNoon(startYYYYMMDD);
-          const endDate = getETNoon(endYYYYMMDD);
+          if (typeof currentData.dateRange.end === "string") {
+            endYYYYMMDD = currentData.dateRange.end;
+          } else {
+            const endET = getETComponents(new Date(currentData.dateRange.end));
+            endYYYYMMDD = `${endET.year}-${String(endET.month + 1).padStart(2, '0')}-${String(endET.day).padStart(2, '0')}`;
+          }
+
+          // Parse dates and set to ET noon using common function
+          const startDate = parseETNoonDate(startYYYYMMDD);
+          const endDate = parseETNoonDate(endYYYYMMDD);
 
           // Timezone verification
           console.log("Timezone check:", {
@@ -1162,7 +1284,16 @@
 
         // Calculate for next 24 hours based on average and trend
         if (currentData.dateRange && currentData.dateRange.start) {
-          const startDate = new Date(currentData.dateRange.start);
+          // Parse start date properly
+          let startDateStr;
+          if (typeof currentData.dateRange.start === "string") {
+            startDateStr = currentData.dateRange.start;
+          } else {
+            const startET = getETComponents(new Date(currentData.dateRange.start));
+            startDateStr = `${startET.year}-${String(startET.month + 1).padStart(2, '0')}-${String(startET.day).padStart(2, '0')}`;
+          }
+          const startDate = parseETNoonDate(startDateStr);
+
           const daysSinceStart = Math.floor(
             (now - startDate) / (1000 * 60 * 60 * 24)
           );
@@ -1191,33 +1322,16 @@
           currentData.dateRange.end &&
           currentData.dateRange.start
         ) {
-          // Convert to YYYY-MM-DD and add ET noon time
-          const endDateObj = new Date(currentData.dateRange.end);
-          const endYear = endDateObj.getFullYear();
-          const endMonth = String(endDateObj.getMonth() + 1).padStart(2, "0");
-          const endDay = String(endDateObj.getDate()).padStart(2, "0");
-          const endYYYYMMDD = `${endYear}-${endMonth}-${endDay}`;
-          // Function to get ET noon for a given date
-          function getETNoon(dateString) {
-            const tempDate = new Date(dateString + "T12:00:00Z");
-            const year = tempDate.getUTCFullYear();
-            const month = tempDate.getUTCMonth();
-            const date = tempDate.getUTCDate();
-
-            // Simplified EDT check: March 15 - November 1
-            const isEDT =
-              (month > 2 && month < 10) ||
-              (month === 2 && date >= 15) ||
-              (month === 10 && date <= 1);
-
-            // ET noon in UTC:
-            // EDT (UTC-4): 12:00 + 4 = 16:00 UTC = KST 01:00 AM
-            // EST (UTC-5): 12:00 + 5 = 17:00 UTC = KST 02:00 AM
-            const utcHour = isEDT ? 16 : 17;
-            return new Date(Date.UTC(year, month, date, utcHour, 0, 0));
+          // Parse end date properly
+          let endYYYYMMDD;
+          if (typeof currentData.dateRange.end === "string") {
+            endYYYYMMDD = currentData.dateRange.end;
+          } else {
+            const endET = getETComponents(new Date(currentData.dateRange.end));
+            endYYYYMMDD = `${endET.year}-${String(endET.month + 1).padStart(2, '0')}-${String(endET.day).padStart(2, '0')}`;
           }
-
-          const endDate = getETNoon(endYYYYMMDD);
+          // Use common function to get ET noon
+          const endDate = parseETNoonDate(endYYYYMMDD);
 
           const hoursRemaining = Math.max(
             0,
@@ -1257,19 +1371,18 @@
         const hours = Array.from({ length: 24 }, (_, i) => formatHour(i));
 
         // Use same day pattern as current week (8 days, noon to noon)
-        const start = currentStartDate
-          ? new Date(currentStartDate + "T00:00:00")
-          : null;
         const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
         let days = [];
+        let start = null;
 
-        if (start) {
+        if (currentStartDate) {
+          // Use common function to create ET noon date
+          start = parseETNoonDate(currentStartDate);
+
           // Generate same day labels as current week
           for (let i = 0; i < 8; i++) {
-            const currentDate = new Date(start);
-            currentDate.setDate(start.getDate() + i);
-
-            // Get day of week in ET
+            // Add days and get ET components
+            const currentDate = new Date(start.getTime() + (i * 24 * 60 * 60 * 1000));
             const etComponents = getETComponents(currentDate);
             const dayOfWeek = etComponents.dayOfWeek;
             days.push(dayNames[dayOfWeek]);
@@ -1290,35 +1403,52 @@
         // Use the actual start date from the selected range
         let currentWeekStart;
         if (currentStartDate) {
-          // Use the selected date range's start date
-          currentWeekStart = new Date(currentStartDate + "T12:00:00");
+          // Use common function to create ET noon date
+          currentWeekStart = parseETNoonDate(currentStartDate);
         } else {
           // Fallback to Friday if no date selected
           const now = new Date();
           currentWeekStart = new Date(now);
-          while (currentWeekStart.getDay() !== 5) {
+          while (getETComponents(currentWeekStart).dayOfWeek !== 5) {
             // Find last Friday
-            currentWeekStart.setDate(currentWeekStart.getDate() - 1);
+            currentWeekStart.setTime(currentWeekStart.getTime() - (24 * 60 * 60 * 1000));
           }
-          currentWeekStart.setHours(12, 0, 0, 0);
+          // Set to noon ET using common function
+          const weekET = getETComponents(currentWeekStart);
+          const weekDateStr = `${weekET.year}-${String(weekET.month + 1).padStart(2, '0')}-${String(weekET.day).padStart(2, '0')}`;
+          currentWeekStart = parseETNoonDate(weekDateStr);
         }
 
         // Process each of the 4 previous weeks
         for (let week = 1; week <= 4; week++) {
           const weekStart = new Date(currentWeekStart);
-          weekStart.setDate(weekStart.getDate() - week * 7);
+          weekStart.setTime(weekStart.getTime() - (week * 7 * 24 * 60 * 60 * 1000));
           const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekEnd.getDate() + 8); // 8 days to include the last day
+          weekEnd.setTime(weekEnd.getTime() + (8 * 24 * 60 * 60 * 1000)); // 8 days to include the last day
 
           tweets.forEach((tweet) => {
             const date = parseTwitterDate(tweet.created_at);
             if (date && date >= weekStart && date < weekEnd) {
-              const hour = date.getHours();
+              const dateET = getETComponents(date);
+              const hour = dateET.hour;
 
-              // Calculate day position in the week pattern
+              // Calculate day position in the week pattern using ET components
+              const tweetDateStr = `${dateET.year}-${String(dateET.month + 1).padStart(2, '0')}-${String(dateET.day).padStart(2, '0')}`;
+              const weekStartET = getETComponents(weekStart);
+              const weekStartDateStr = `${weekStartET.year}-${String(weekStartET.month + 1).padStart(2, '0')}-${String(weekStartET.day).padStart(2, '0')}`;
+
+              // Create dates at ET midnight for accurate day difference
+              const tweetDayStart = parseETNoonDate(tweetDateStr);
+              const weekStartDayStart = parseETNoonDate(weekStartDateStr);
+
+              // Adjust to midnight by subtracting 12 hours from noon
+              tweetDayStart.setTime(tweetDayStart.getTime() - (12 * 60 * 60 * 1000));
+              weekStartDayStart.setTime(weekStartDayStart.getTime() - (12 * 60 * 60 * 1000));
+
               const daysDiff = Math.floor(
-                (date - weekStart) / (1000 * 60 * 60 * 24)
+                (tweetDayStart - weekStartDayStart) / (1000 * 60 * 60 * 24)
               );
+
               if (daysDiff >= 0 && daysDiff <= 7) {
                 // Include day 7 (8th day)
                 // Apply noon filtering for first and last day
@@ -1366,8 +1496,8 @@
           ),
           mostActiveDay: days[avgTotals.indexOf(Math.max(...avgTotals))],
           dateRange: {
-            start: new Date(currentStartDate),
-            end: new Date(currentEndDate),
+            start: currentStartDate,  // Keep as string
+            end: currentEndDate,      // Keep as string
           },
         };
       }
@@ -1429,65 +1559,27 @@
               }
             }
 
-            // Check if this is the current time or future time
+            // Check if this is the current time
             let isCurrentTime = false;
-            let isFuture = false;
             const now = new Date();
-            if (dateRange && dateRange.start) {
-              // Handle both string and Date object formats
-              let startDateStr;
-              if (typeof dateRange.start === "string") {
-                startDateStr = dateRange.start;
-              } else {
-                // Convert Date object to YYYY-MM-DD string
-                const startDate = new Date(dateRange.start);
-                const year = startDate.getFullYear();
-                const month = String(startDate.getMonth() + 1).padStart(2, "0");
-                const day = String(startDate.getDate()).padStart(2, "0");
-                startDateStr = `${year}-${month}-${day}`;
-              }
+            const nowET = getETComponents(now);
 
-              // Parse the date string and create a date at noon ET for that day
-              const [year, month, day] = startDateStr.split("-").map(Number);
+            // For average heatmap: highlight ALL cells that match current day and hour
+            // This shows the historical pattern for this specific time slot
+            const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+            const currentDayName = dayNames[nowET.dayOfWeek];
 
-              // Create base date at noon ET for the start date
-              const baseDateNoonET = new Date(
-                `${year}-${String(month).padStart(2, "0")}-${String(
-                  day
-                ).padStart(2, "0")}T12:00:00-05:00`
-              );
-
-              // Add days to get the cell date (still at noon ET)
-              const cellDateNoonET = new Date(baseDateNoonET);
-              cellDateNoonET.setDate(cellDateNoonET.getDate() + dayIndex);
-
-              // Get the ET components for this cell's date
-              const cellET = getETComponents(cellDateNoonET);
-              const nowET = getETComponents(now);
-
-              // Check if this cell represents the current hour (same day of week and hour)
-              if (
-                cellET.dayOfWeek === nowET.dayOfWeek &&
-                hourIndex === nowET.hour
-              ) {
+            // Check if this cell matches current day of week and hour
+            // Highlight ALL matching time slots to show historical pattern
+            if (day === currentDayName && hourIndex === nowET.hour) {
+              // Check if this cell is not disabled
+              if (!isDisabled) {
                 isCurrentTime = true;
               }
-
-              // Check if this is a future time
-              if (
-                cellET.year > nowET.year ||
-                (cellET.year === nowET.year && cellET.month > nowET.month) ||
-                (cellET.year === nowET.year &&
-                  cellET.month === nowET.month &&
-                  cellET.day > nowET.day) ||
-                (cellET.year === nowET.year &&
-                  cellET.month === nowET.month &&
-                  cellET.day === nowET.day &&
-                  hourIndex > nowET.hour)
-              ) {
-                isFuture = true;
-              }
             }
+
+            // No future time check needed for average heatmap
+            let isFuture = false;
 
             let tooltipText = `${day} ${hour}: ${value.toFixed(1)} avg tweets`;
             if (isCurrentTime) {
@@ -1588,45 +1680,39 @@
             let isCurrentTime = false;
             let isFuture = false;
             const now = new Date();
+            const nowET = getETComponents(now);
+
+            // For current week heatmap: highlight ALL cells that match current day and hour
+            // This shows the historical pattern for this specific time slot
+            const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+            const currentDayName = dayNames[nowET.dayOfWeek];
+
+            // Check if this cell matches current day of week and hour
+            if (day === currentDayName && hourIndex === nowET.hour && !isDisabled) {
+              isCurrentTime = true;
+            }
+
             if (dateRange && dateRange.start) {
               // Handle both string and Date object formats
               let startDateStr;
               if (typeof dateRange.start === "string") {
                 startDateStr = dateRange.start;
               } else {
-                // Convert Date object to YYYY-MM-DD string
+                // Convert Date object to YYYY-MM-DD string using ET components
                 const startDate = new Date(dateRange.start);
-                const year = startDate.getFullYear();
-                const month = String(startDate.getMonth() + 1).padStart(2, "0");
-                const day = String(startDate.getDate()).padStart(2, "0");
+                const startET = getETComponents(startDate);
+                const year = startET.year;
+                const month = String(startET.month + 1).padStart(2, "0");
+                const day = String(startET.day).padStart(2, "0");
                 startDateStr = `${year}-${month}-${day}`;
               }
 
-              // Parse the date string and create a date at noon ET for that day
-              const [year, month, day] = startDateStr.split("-").map(Number);
-
-              // Create base date at noon ET for the start date
-              const baseDateNoonET = new Date(
-                `${year}-${String(month).padStart(2, "0")}-${String(
-                  day
-                ).padStart(2, "0")}T12:00:00-05:00`
-              );
-
-              // Add days to get the cell date (still at noon ET)
-              const cellDateNoonET = new Date(baseDateNoonET);
-              cellDateNoonET.setDate(cellDateNoonET.getDate() + dayIndex);
+              // Use common function to create ET noon date and add days
+              const startDateET = parseETNoonDate(startDateStr);
+              const cellDateNoonET = new Date(startDateET.getTime() + (dayIndex * 24 * 60 * 60 * 1000));
 
               // Get the ET components for this cell's date
               const cellET = getETComponents(cellDateNoonET);
-              const nowET = getETComponents(now);
-
-              // Check if this cell represents the current hour (same day of week and hour)
-              if (
-                cellET.dayOfWeek === nowET.dayOfWeek &&
-                hourIndex === nowET.hour
-              ) {
-                isCurrentTime = true;
-              }
 
               // Check if this is a future time
               if (
@@ -1653,12 +1739,22 @@
             // Create tooltip with actual date if available
             let tooltipText = `${day} ${hour}: ${value} tweets`;
             if (dateRange && dateRange.start) {
-              const actualDate = new Date(dateRange.start);
-              actualDate.setDate(actualDate.getDate() + dayIndex);
-              const dateStr = actualDate.toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              });
+              // Use parseETNoonDate to properly handle the date
+              let startDateStr;
+              if (typeof dateRange.start === "string") {
+                startDateStr = dateRange.start;
+              } else {
+                const startET = getETComponents(new Date(dateRange.start));
+                startDateStr = `${startET.year}-${String(startET.month + 1).padStart(2, '0')}-${String(startET.day).padStart(2, '0')}`;
+              }
+
+              const startDate = parseETNoonDate(startDateStr);
+              const cellDate = new Date(startDate.getTime() + (dayIndex * 24 * 60 * 60 * 1000));
+              const cellET = getETComponents(cellDate);
+
+              // Format date in ET
+              const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+              const dateStr = `${monthNames[cellET.month]} ${cellET.day}`;
 
               if (isFuture && !isDisabled) {
                 tooltipText = `${dateStr} (${day}) ${hour}: Future`;
@@ -1942,77 +2038,79 @@
         let recentFriday = new Date(currentDate);
         while (getETComponents(recentFriday).dayOfWeek !== 5) {
           // 5 = Friday
-          recentFriday.setDate(recentFriday.getDate() - 1);
+          recentFriday.setTime(recentFriday.getTime() - (24 * 60 * 60 * 1000));
         }
 
         // Find the most recent Tuesday in ET
         let recentTuesday = new Date(currentDate);
         while (getETComponents(recentTuesday).dayOfWeek !== 2) {
           // 2 = Tuesday
-          recentTuesday.setDate(recentTuesday.getDate() - 1);
+          recentTuesday.setTime(recentTuesday.getTime() - (24 * 60 * 60 * 1000));
         }
 
         // Add current ongoing week ranges
-        // Friday range
-        let nextFriday = new Date(recentFriday);
-        if (
-          currentET.dayOfWeek !== 5 ||
-          (currentET.dayOfWeek === 5 && currentET.hour < 12)
-        ) {
-          while (nextFriday <= currentDate) {
-            nextFriday.setDate(nextFriday.getDate() + 7);
-          }
-          specificRanges.push({
-            start: new Date(recentFriday),
-            end: new Date(nextFriday),
-            type: "friday",
-          });
+        // Friday range - check if we're past Friday noon ET
+        let startFriday = new Date(recentFriday);
+        let endFriday = new Date(recentFriday);
+        endFriday.setTime(endFriday.getTime() + (7 * 24 * 60 * 60 * 1000));
+
+        // If we're on Friday and past noon ET, move to next week's range
+        if (currentET.dayOfWeek === 5 && currentET.hour >= 12) {
+          startFriday.setTime(startFriday.getTime() + (7 * 24 * 60 * 60 * 1000));
+          endFriday.setTime(endFriday.getTime() + (7 * 24 * 60 * 60 * 1000));
         }
 
-        // Tuesday range
-        let nextTuesday = new Date(recentTuesday);
-        if (
-          currentET.dayOfWeek !== 2 ||
-          (currentET.dayOfWeek === 2 && currentET.hour < 12)
-        ) {
-          while (nextTuesday <= currentDate) {
-            nextTuesday.setDate(nextTuesday.getDate() + 7);
-          }
-          specificRanges.push({
-            start: new Date(recentTuesday),
-            end: new Date(nextTuesday),
-            type: "tuesday",
-          });
+        specificRanges.push({
+          start: new Date(startFriday),
+          end: new Date(endFriday),
+          type: "friday",
+        });
+
+        // Tuesday range - check if we're past Tuesday noon ET
+        let startTuesday = new Date(recentTuesday);
+        let endTuesday = new Date(recentTuesday);
+        endTuesday.setTime(endTuesday.getTime() + (7 * 24 * 60 * 60 * 1000));
+
+        // If we're on Tuesday and past noon ET, move to next week's range
+        if (currentET.dayOfWeek === 2 && currentET.hour >= 12) {
+          startTuesday.setTime(startTuesday.getTime() + (7 * 24 * 60 * 60 * 1000));
+          endTuesday.setTime(endTuesday.getTime() + (7 * 24 * 60 * 60 * 1000));
         }
+
+        specificRanges.push({
+          start: new Date(startTuesday),
+          end: new Date(endTuesday),
+          type: "tuesday",
+        });
 
         // Generate past ranges for both Friday and Tuesday
-        let startFriday = new Date(recentFriday);
-        let startTuesday = new Date(recentTuesday);
+        let pastFriday = new Date(recentFriday);
+        let pastTuesday = new Date(recentTuesday);
 
         // Go back 8 weeks for each pattern
         for (let i = 0; i < 8; i++) {
           // Friday ranges
-          const endFriday = new Date(startFriday);
-          startFriday = new Date(startFriday);
-          startFriday.setDate(startFriday.getDate() - 7);
+          const endFridayPast = new Date(pastFriday);
+          pastFriday = new Date(pastFriday);
+          pastFriday.setTime(pastFriday.getTime() - (7 * 24 * 60 * 60 * 1000));
 
-          if (startFriday >= minDate && startFriday <= maxDate) {
+          if (pastFriday >= minDate && pastFriday <= maxDate) {
             specificRanges.push({
-              start: new Date(startFriday),
-              end: new Date(endFriday),
+              start: new Date(pastFriday),
+              end: new Date(endFridayPast),
               type: "friday",
             });
           }
 
           // Tuesday ranges
-          const endTuesday = new Date(startTuesday);
-          startTuesday = new Date(startTuesday);
-          startTuesday.setDate(startTuesday.getDate() - 7);
+          const endTuesdayPast = new Date(pastTuesday);
+          pastTuesday = new Date(pastTuesday);
+          pastTuesday.setTime(pastTuesday.getTime() - (7 * 24 * 60 * 60 * 1000));
 
-          if (startTuesday >= minDate && startTuesday <= maxDate) {
+          if (pastTuesday >= minDate && pastTuesday <= maxDate) {
             specificRanges.push({
-              start: new Date(startTuesday),
-              end: new Date(endTuesday),
+              start: new Date(pastTuesday),
+              end: new Date(endTuesdayPast),
               type: "tuesday",
             });
           }
@@ -2024,30 +2122,31 @@
         // Process each range - only include ranges that have started (noon ET on start date)
         specificRanges.forEach((range) => {
           // Check if the range has started (noon ET on start date)
-          // Create start date at noon
-          const rangeStartNoon = new Date(range.start);
-          rangeStartNoon.setHours(12, 0, 0, 0);
+          // Get ET components and create YYYY-MM-DD string
+          const startET = getETComponents(range.start);
+          const startYear = startET.year;
+          const startMonth = String(startET.month + 1).padStart(2, "0");
+          const startDayNum = String(startET.day).padStart(2, "0");
+          const startDateStr = `${startYear}-${startMonth}-${startDayNum}`;
+
+          // Use common function to create ET noon date
+          const rangeStartNoon = parseETNoonDate(startDateStr);
 
           // Current time
           const now = new Date();
 
           // Only include ranges where start date noon has passed
           if (rangeStartNoon <= now) {
-            const startDay = dayNames[range.start.getDay()];
-            const endDay = dayNames[range.end.getDay()];
+            // Get day of week in ET timezone
+            const endET = getETComponents(range.end);
+            const startDay = dayNames[startET.dayOfWeek];
+            const endDay = dayNames[endET.dayOfWeek];
 
-            // Use local date format to avoid UTC conversion issues
-            const startYear = range.start.getFullYear();
-            const startMonth = String(range.start.getMonth() + 1).padStart(
-              2,
-              "0"
-            );
-            const startDayNum = String(range.start.getDate()).padStart(2, "0");
-            const startStr = `${startYear}-${startMonth}-${startDayNum}`;
-
-            const endYear = range.end.getFullYear();
-            const endMonth = String(range.end.getMonth() + 1).padStart(2, "0");
-            const endDayNum = String(range.end.getDate()).padStart(2, "0");
+            // Use ET date components to avoid timezone issues
+            // startDateStr already created above
+            const endYear = endET.year;
+            const endMonth = String(endET.month + 1).padStart(2, "0");
+            const endDayNum = String(endET.day).padStart(2, "0");
             const endStr = `${endYear}-${endMonth}-${endDayNum}`;
 
             const startLabel = range.start.toLocaleDateString("en-US", {
@@ -2060,9 +2159,9 @@
             });
 
             ranges.push({
-              value: `${startStr}|${endStr}|${startDay.toLowerCase()}`,
+              value: `${startDateStr}|${endStr}|${startDay.toLowerCase()}`,
               display: `${startLabel} - ${endLabel} (${startDay}-${endDay})`,
-              startDate: startStr,
+              startDate: startDateStr,
               endDate: endStr,
               endDateTime: range.end,
             });
@@ -2090,8 +2189,9 @@
         let earliestEndDate = null;
 
         ranges.forEach((range, index) => {
-          // Check if this range is ongoing (end date noon hasn't passed)
-          const endDateNoon = new Date(range.endDate + "T12:00:00");
+          // Check if this range is ongoing (end date ET noon hasn't passed)
+          // Use common function to create ET noon date
+          const endDateNoon = parseETNoonDate(range.endDate);
 
           if (endDateNoon > now) {
             // This range is ongoing
