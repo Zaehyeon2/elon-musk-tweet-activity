@@ -233,6 +233,15 @@
       .level-0 {
         background-color: #eef7ee; /* Light green tint for 0 values */
       }
+      .level-future {
+        background-color: #f6f8fa; /* Gray for future times */
+        border: 1px dashed #d1d5da;
+        opacity: 0.5;
+      }
+      .level-future .activity-value {
+        color: #959da5;
+        font-size: 8px;
+      }
       .level-1 {
         background-color: #c3e6c3; /* More visible green for 1 */
       }
@@ -798,6 +807,42 @@
         return `${hour - 12} PM`;
       }
 
+      // ET timezone formatter
+      const etFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+
+      // Get ET date components efficiently
+      function getETComponents(date) {
+        const parts = etFormatter.formatToParts(date);
+        const result = {};
+        parts.forEach(part => {
+          if (part.type !== 'literal') {
+            result[part.type] = part.value;
+          }
+        });
+
+        // Calculate day of week in ET
+        const etDate = new Date(`${result.year}-${result.month}-${result.day}T12:00:00-05:00`);
+
+        return {
+          year: parseInt(result.year),
+          month: parseInt(result.month) - 1, // JS months are 0-indexed
+          day: parseInt(result.day),
+          hour: parseInt(result.hour),
+          minute: parseInt(result.minute),
+          second: parseInt(result.second),
+          dayOfWeek: etDate.getDay()
+        };
+      }
+
       // Process data into heatmap
       function processData(tweets, startDate, endDate, rangeType = "friday") {
         const hours = Array.from({ length: 24 }, (_, i) => formatHour(i));
@@ -824,7 +869,10 @@
           for (let i = 0; i < dayCount; i++) {
             const currentDate = new Date(actualStart);
             currentDate.setDate(actualStart.getDate() + i);
-            const dayOfWeek = currentDate.getDay();
+
+            // Get day of week in ET
+            const etComponents = getETComponents(currentDate);
+            const dayOfWeek = etComponents.dayOfWeek;
             days.push(dayNames[dayOfWeek]);
           }
 
@@ -1091,9 +1139,7 @@
           avgData.current > 0 ? currentData.current / avgData.current : 1;
 
         // Next 24 hours prediction
-        const nowET = new Date(
-          now.toLocaleString("en-US", { timeZone: "America/New_York" })
-        );
+        const nowETComponents = getETComponents(now);
         let next24hTotal = 0;
 
         // Calculate for next 24 hours based on average and trend
@@ -1104,8 +1150,8 @@
           );
 
           for (let i = 0; i < 24; i++) {
-            const futureHour = (nowET.getHours() + i) % 24;
-            const futureDayOffset = Math.floor((nowET.getHours() + i) / 24);
+            const futureHour = (nowETComponents.hour + i) % 24;
+            const futureDayOffset = Math.floor((nowETComponents.hour + i) / 24);
             const futureDayIndex = (daysSinceStart + futureDayOffset) % 8; // Use 8-day cycle
 
             if (
@@ -1202,7 +1248,10 @@
           for (let i = 0; i < 8; i++) {
             const currentDate = new Date(start);
             currentDate.setDate(start.getDate() + i);
-            const dayOfWeek = currentDate.getDay();
+
+            // Get day of week in ET
+            const etComponents = getETComponents(currentDate);
+            const dayOfWeek = etComponents.dayOfWeek;
             days.push(dayNames[dayOfWeek]);
           }
         } else {
@@ -1360,22 +1409,56 @@
               }
             }
 
-            // Check if this is the current time
+            // Check if this is the current time or future time
             let isCurrentTime = false;
+            let isFuture = false;
             const now = new Date();
             if (dateRange && dateRange.start) {
-              const cellDate = new Date(dateRange.start);
-              cellDate.setDate(cellDate.getDate() + dayIndex);
+              // Handle both string and Date object formats
+              let startDateStr;
+              if (typeof dateRange.start === 'string') {
+                startDateStr = dateRange.start;
+              } else {
+                // Convert Date object to YYYY-MM-DD string
+                const startDate = new Date(dateRange.start);
+                const year = startDate.getFullYear();
+                const month = String(startDate.getMonth() + 1).padStart(2, '0');
+                const day = String(startDate.getDate()).padStart(2, '0');
+                startDateStr = `${year}-${month}-${day}`;
+              }
 
-              // Check if it's today and current hour (in ET timezone)
-              const nowET = new Date(
-                now.toLocaleString("en-US", { timeZone: "America/New_York" })
-              );
+              // Parse the date string and create a date at noon ET for that day
+              const [year, month, day] = startDateStr.split('-').map(Number);
+
+              // Create base date at noon ET for the start date
+              const baseDateNoonET = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00-05:00`);
+
+              // Add days to get the cell date (still at noon ET)
+              const cellDateNoonET = new Date(baseDateNoonET);
+              cellDateNoonET.setDate(cellDateNoonET.getDate() + dayIndex);
+
+              // Get the ET components for this cell's date
+              const cellET = getETComponents(cellDateNoonET);
+              const nowET = getETComponents(now);
+
+              // Check if this cell represents the current hour
               if (
-                cellDate.toDateString() === now.toDateString() &&
-                hourIndex === nowET.getHours()
+                cellET.year === nowET.year &&
+                cellET.month === nowET.month &&
+                cellET.day === nowET.day &&
+                hourIndex === nowET.hour
               ) {
                 isCurrentTime = true;
+              }
+
+              // Check if this is a future time
+              if (
+                cellET.year > nowET.year ||
+                (cellET.year === nowET.year && cellET.month > nowET.month) ||
+                (cellET.year === nowET.year && cellET.month === nowET.month && cellET.day > nowET.day) ||
+                (cellET.year === nowET.year && cellET.month === nowET.month && cellET.day === nowET.day && hourIndex > nowET.hour)
+              ) {
+                isFuture = true;
               }
             }
 
@@ -1474,23 +1557,63 @@
               }
             }
 
-            // Check if this is the current time
+            // Check if this is the current time or future time
             let isCurrentTime = false;
+            let isFuture = false;
             const now = new Date();
             if (dateRange && dateRange.start) {
-              const cellDate = new Date(dateRange.start);
-              cellDate.setDate(cellDate.getDate() + dayIndex);
+              // Handle both string and Date object formats
+              let startDateStr;
+              if (typeof dateRange.start === 'string') {
+                startDateStr = dateRange.start;
+              } else {
+                // Convert Date object to YYYY-MM-DD string
+                const startDate = new Date(dateRange.start);
+                const year = startDate.getFullYear();
+                const month = String(startDate.getMonth() + 1).padStart(2, '0');
+                const day = String(startDate.getDate()).padStart(2, '0');
+                startDateStr = `${year}-${month}-${day}`;
+              }
 
-              // Check if it's today and current hour (in ET timezone)
-              const nowET = new Date(
-                now.toLocaleString("en-US", { timeZone: "America/New_York" })
-              );
+              // Parse the date string and create a date at noon ET for that day
+              const [year, month, day] = startDateStr.split('-').map(Number);
+
+              // Create base date at noon ET for the start date
+              const baseDateNoonET = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00-05:00`);
+
+              // Add days to get the cell date (still at noon ET)
+              const cellDateNoonET = new Date(baseDateNoonET);
+              cellDateNoonET.setDate(cellDateNoonET.getDate() + dayIndex);
+
+              // Get the ET components for this cell's date
+              const cellET = getETComponents(cellDateNoonET);
+              const nowET = getETComponents(now);
+
+              // Check if this cell represents the current hour
               if (
-                cellDate.toDateString() === now.toDateString() &&
-                hourIndex === nowET.getHours()
+                cellET.year === nowET.year &&
+                cellET.month === nowET.month &&
+                cellET.day === nowET.day &&
+                hourIndex === nowET.hour
               ) {
                 isCurrentTime = true;
               }
+
+              // Check if this is a future time
+              if (
+                cellET.year > nowET.year ||
+                (cellET.year === nowET.year && cellET.month > nowET.month) ||
+                (cellET.year === nowET.year && cellET.month === nowET.month && cellET.day > nowET.day) ||
+                (cellET.year === nowET.year && cellET.month === nowET.month && cellET.day === nowET.day && hourIndex > nowET.hour)
+              ) {
+                isFuture = true;
+              }
+            }
+
+            // Apply future style if needed
+            if (isFuture && !isDisabled) {
+              displayValue = "";  // Empty for future
+              colorLevel = "level-future";
             }
 
             // Create tooltip with actual date if available
@@ -1502,7 +1625,13 @@
                 month: "short",
                 day: "numeric",
               });
-              tooltipText = `${dateStr} (${day}) ${hour}: ${value} tweets`;
+
+              if (isFuture && !isDisabled) {
+                tooltipText = `${dateStr} (${day}) ${hour}: Future`;
+              } else {
+                tooltipText = `${dateStr} (${day}) ${hour}: ${value} tweets`;
+              }
+
               if (isCurrentTime) {
                 tooltipText += " 🔴 CURRENT HOUR";
               }
@@ -1767,16 +1896,19 @@
         const specificRanges = [];
         const currentDate = new Date();
 
-        // Find the most recent Friday
+        // Get current time in ET for comparison
+        const currentET = getETComponents(currentDate);
+
+        // Find the most recent Friday in ET
         let recentFriday = new Date(currentDate);
-        while (recentFriday.getDay() !== 5) {
+        while (getETComponents(recentFriday).dayOfWeek !== 5) {
           // 5 = Friday
           recentFriday.setDate(recentFriday.getDate() - 1);
         }
 
-        // Find the most recent Tuesday
+        // Find the most recent Tuesday in ET
         let recentTuesday = new Date(currentDate);
-        while (recentTuesday.getDay() !== 2) {
+        while (getETComponents(recentTuesday).dayOfWeek !== 2) {
           // 2 = Tuesday
           recentTuesday.setDate(recentTuesday.getDate() - 1);
         }
@@ -1785,8 +1917,8 @@
         // Friday range
         let nextFriday = new Date(recentFriday);
         if (
-          currentDate.getDay() !== 5 ||
-          (currentDate.getDay() === 5 && currentDate.getHours() < 12)
+          currentET.dayOfWeek !== 5 ||
+          (currentET.dayOfWeek === 5 && currentET.hour < 12)
         ) {
           while (nextFriday <= currentDate) {
             nextFriday.setDate(nextFriday.getDate() + 7);
@@ -1801,8 +1933,8 @@
         // Tuesday range
         let nextTuesday = new Date(recentTuesday);
         if (
-          currentDate.getDay() !== 2 ||
-          (currentDate.getDay() === 2 && currentDate.getHours() < 12)
+          currentET.dayOfWeek !== 2 ||
+          (currentET.dayOfWeek === 2 && currentET.hour < 12)
         ) {
           while (nextTuesday <= currentDate) {
             nextTuesday.setDate(nextTuesday.getDate() + 7);
@@ -1865,8 +1997,16 @@
             const startDay = dayNames[range.start.getDay()];
             const endDay = dayNames[range.end.getDay()];
 
-            const startStr = range.start.toISOString().split("T")[0];
-            const endStr = range.end.toISOString().split("T")[0];
+            // Use local date format to avoid UTC conversion issues
+            const startYear = range.start.getFullYear();
+            const startMonth = String(range.start.getMonth() + 1).padStart(2, '0');
+            const startDayNum = String(range.start.getDate()).padStart(2, '0');
+            const startStr = `${startYear}-${startMonth}-${startDayNum}`;
+
+            const endYear = range.end.getFullYear();
+            const endMonth = String(range.end.getMonth() + 1).padStart(2, '0');
+            const endDayNum = String(range.end.getDate()).padStart(2, '0');
+            const endStr = `${endYear}-${endMonth}-${endDayNum}`;
 
             const startLabel = range.start.toLocaleDateString("en-US", {
               month: "long",
