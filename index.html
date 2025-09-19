@@ -808,29 +808,31 @@
       }
 
       // ET timezone formatter
-      const etFormatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/New_York',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
+      const etFormatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/New_York",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
       });
 
       // Get ET date components efficiently
       function getETComponents(date) {
         const parts = etFormatter.formatToParts(date);
         const result = {};
-        parts.forEach(part => {
-          if (part.type !== 'literal') {
+        parts.forEach((part) => {
+          if (part.type !== "literal") {
             result[part.type] = part.value;
           }
         });
 
         // Calculate day of week in ET
-        const etDate = new Date(`${result.year}-${result.month}-${result.day}T12:00:00-05:00`);
+        const etDate = new Date(
+          `${result.year}-${result.month}-${result.day}T12:00:00-05:00`
+        );
 
         return {
           year: parseInt(result.year),
@@ -839,7 +841,7 @@
           hour: parseInt(result.hour),
           minute: parseInt(result.minute),
           second: parseInt(result.second),
-          dayOfWeek: etDate.getDay()
+          dayOfWeek: etDate.getDay(),
         };
       }
 
@@ -1055,20 +1057,23 @@
 
           // Get YYYY-MM-DD in local time (not UTC)
           const startYear = startDateObj.getFullYear();
-          const startMonth = String(startDateObj.getMonth() + 1).padStart(2, '0');
-          const startDay = String(startDateObj.getDate()).padStart(2, '0');
+          const startMonth = String(startDateObj.getMonth() + 1).padStart(
+            2,
+            "0"
+          );
+          const startDay = String(startDateObj.getDate()).padStart(2, "0");
           const startYYYYMMDD = `${startYear}-${startMonth}-${startDay}`;
 
           const endYear = endDateObj.getFullYear();
-          const endMonth = String(endDateObj.getMonth() + 1).padStart(2, '0');
-          const endDay = String(endDateObj.getDate()).padStart(2, '0');
+          const endMonth = String(endDateObj.getMonth() + 1).padStart(2, "0");
+          const endDay = String(endDateObj.getDate()).padStart(2, "0");
           const endYYYYMMDD = `${endYear}-${endMonth}-${endDay}`;
 
           // Parse dates and set to ET noon
           // Function to get ET noon for a given date
           function getETNoon(dateString) {
             // Create a date at noon UTC
-            const tempDate = new Date(dateString + 'T12:00:00Z');
+            const tempDate = new Date(dateString + "T12:00:00Z");
 
             // Check if this date is in EDT or EST
             // EDT: Second Sunday in March to first Sunday in November
@@ -1078,9 +1083,10 @@
 
             // Simplified: March 15 - November 1 is definitely EDT
             // More accurate would check actual DST transition dates
-            const isEDT = (month > 2 && month < 10) ||
-                         (month === 2 && date >= 15) ||
-                         (month === 10 && date <= 1);
+            const isEDT =
+              (month > 2 && month < 10) ||
+              (month === 2 && date >= 15) ||
+              (month === 10 && date <= 1);
 
             // ET noon in UTC:
             // EDT (UTC-4): 12:00 + 4 = 16:00 UTC = KST 01:00 AM
@@ -1095,13 +1101,21 @@
           const endDate = getETNoon(endYYYYMMDD);
 
           // Timezone verification
-          console.log('Timezone check:', {
+          console.log("Timezone check:", {
             startYYYYMMDD,
             endYYYYMMDD,
-            startDate_KST: startDate.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
-            endDate_KST: endDate.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
-            startDate_ET: startDate.toLocaleString('en-US', { timeZone: 'America/New_York' }),
-            endDate_ET: endDate.toLocaleString('en-US', { timeZone: 'America/New_York' })
+            startDate_KST: startDate.toLocaleString("ko-KR", {
+              timeZone: "Asia/Seoul",
+            }),
+            endDate_KST: endDate.toLocaleString("ko-KR", {
+              timeZone: "Asia/Seoul",
+            }),
+            startDate_ET: startDate.toLocaleString("en-US", {
+              timeZone: "America/New_York",
+            }),
+            endDate_ET: endDate.toLocaleString("en-US", {
+              timeZone: "America/New_York",
+            }),
           });
 
           // Calculate elapsed hours
@@ -1114,20 +1128,24 @@
             const tweetsPerHour = currentData.current / elapsedHours;
             const remainingHours = totalHours - elapsedHours;
             const projectedAdditional = tweetsPerHour * remainingHours;
-            const projectedTotal = Math.round(currentData.current + projectedAdditional);
+            const projectedTotal = Math.round(
+              currentData.current + projectedAdditional
+            );
 
-            console.log('Pace calculation:', {
+            console.log("Pace calculation:", {
               current: currentData.current,
               elapsedHours: elapsedHours.toFixed(2),
               remainingHours: remainingHours.toFixed(2),
               tweetsPerHour: tweetsPerHour.toFixed(4),
               projectedAdditional: projectedAdditional.toFixed(2),
-              beforeRound: (currentData.current + projectedAdditional).toFixed(2),
+              beforeRound: (currentData.current + projectedAdditional).toFixed(
+                2
+              ),
               projectedTotal: projectedTotal,
               startDate: startDate.toString(),
               endDate: endDate.toString(),
               now: now.toString(),
-              totalHours: totalHours.toFixed(2)
+              totalHours: totalHours.toFixed(2),
             });
 
             pace = projectedTotal.toLocaleString() + " tweets";
@@ -1176,20 +1194,21 @@
           // Convert to YYYY-MM-DD and add ET noon time
           const endDateObj = new Date(currentData.dateRange.end);
           const endYear = endDateObj.getFullYear();
-          const endMonth = String(endDateObj.getMonth() + 1).padStart(2, '0');
-          const endDay = String(endDateObj.getDate()).padStart(2, '0');
+          const endMonth = String(endDateObj.getMonth() + 1).padStart(2, "0");
+          const endDay = String(endDateObj.getDate()).padStart(2, "0");
           const endYYYYMMDD = `${endYear}-${endMonth}-${endDay}`;
           // Function to get ET noon for a given date
           function getETNoon(dateString) {
-            const tempDate = new Date(dateString + 'T12:00:00Z');
+            const tempDate = new Date(dateString + "T12:00:00Z");
             const year = tempDate.getUTCFullYear();
             const month = tempDate.getUTCMonth();
             const date = tempDate.getUTCDate();
 
             // Simplified EDT check: March 15 - November 1
-            const isEDT = (month > 2 && month < 10) ||
-                         (month === 2 && date >= 15) ||
-                         (month === 10 && date <= 1);
+            const isEDT =
+              (month > 2 && month < 10) ||
+              (month === 2 && date >= 15) ||
+              (month === 10 && date <= 1);
 
             // ET noon in UTC:
             // EDT (UTC-4): 12:00 + 4 = 16:00 UTC = KST 01:00 AM
@@ -1209,7 +1228,8 @@
             // Use average rate with trend factor applied
             const avgHourlyRate = avgData.current / totalHours;
             // Apply trend factor to average rate for prediction
-            const predictedRemaining = avgHourlyRate * trendFactor * hoursRemaining;
+            const predictedRemaining =
+              avgHourlyRate * trendFactor * hoursRemaining;
             weekEndTotal += predictedRemaining;
           }
         }
@@ -1416,22 +1436,26 @@
             if (dateRange && dateRange.start) {
               // Handle both string and Date object formats
               let startDateStr;
-              if (typeof dateRange.start === 'string') {
+              if (typeof dateRange.start === "string") {
                 startDateStr = dateRange.start;
               } else {
                 // Convert Date object to YYYY-MM-DD string
                 const startDate = new Date(dateRange.start);
                 const year = startDate.getFullYear();
-                const month = String(startDate.getMonth() + 1).padStart(2, '0');
-                const day = String(startDate.getDate()).padStart(2, '0');
+                const month = String(startDate.getMonth() + 1).padStart(2, "0");
+                const day = String(startDate.getDate()).padStart(2, "0");
                 startDateStr = `${year}-${month}-${day}`;
               }
 
               // Parse the date string and create a date at noon ET for that day
-              const [year, month, day] = startDateStr.split('-').map(Number);
+              const [year, month, day] = startDateStr.split("-").map(Number);
 
               // Create base date at noon ET for the start date
-              const baseDateNoonET = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00-05:00`);
+              const baseDateNoonET = new Date(
+                `${year}-${String(month).padStart(2, "0")}-${String(
+                  day
+                ).padStart(2, "0")}T12:00:00-05:00`
+              );
 
               // Add days to get the cell date (still at noon ET)
               const cellDateNoonET = new Date(baseDateNoonET);
@@ -1441,11 +1465,9 @@
               const cellET = getETComponents(cellDateNoonET);
               const nowET = getETComponents(now);
 
-              // Check if this cell represents the current hour
+              // Check if this cell represents the current hour (same day of week and hour)
               if (
-                cellET.year === nowET.year &&
-                cellET.month === nowET.month &&
-                cellET.day === nowET.day &&
+                cellET.dayOfWeek === nowET.dayOfWeek &&
                 hourIndex === nowET.hour
               ) {
                 isCurrentTime = true;
@@ -1455,8 +1477,13 @@
               if (
                 cellET.year > nowET.year ||
                 (cellET.year === nowET.year && cellET.month > nowET.month) ||
-                (cellET.year === nowET.year && cellET.month === nowET.month && cellET.day > nowET.day) ||
-                (cellET.year === nowET.year && cellET.month === nowET.month && cellET.day === nowET.day && hourIndex > nowET.hour)
+                (cellET.year === nowET.year &&
+                  cellET.month === nowET.month &&
+                  cellET.day > nowET.day) ||
+                (cellET.year === nowET.year &&
+                  cellET.month === nowET.month &&
+                  cellET.day === nowET.day &&
+                  hourIndex > nowET.hour)
               ) {
                 isFuture = true;
               }
@@ -1564,22 +1591,26 @@
             if (dateRange && dateRange.start) {
               // Handle both string and Date object formats
               let startDateStr;
-              if (typeof dateRange.start === 'string') {
+              if (typeof dateRange.start === "string") {
                 startDateStr = dateRange.start;
               } else {
                 // Convert Date object to YYYY-MM-DD string
                 const startDate = new Date(dateRange.start);
                 const year = startDate.getFullYear();
-                const month = String(startDate.getMonth() + 1).padStart(2, '0');
-                const day = String(startDate.getDate()).padStart(2, '0');
+                const month = String(startDate.getMonth() + 1).padStart(2, "0");
+                const day = String(startDate.getDate()).padStart(2, "0");
                 startDateStr = `${year}-${month}-${day}`;
               }
 
               // Parse the date string and create a date at noon ET for that day
-              const [year, month, day] = startDateStr.split('-').map(Number);
+              const [year, month, day] = startDateStr.split("-").map(Number);
 
               // Create base date at noon ET for the start date
-              const baseDateNoonET = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00-05:00`);
+              const baseDateNoonET = new Date(
+                `${year}-${String(month).padStart(2, "0")}-${String(
+                  day
+                ).padStart(2, "0")}T12:00:00-05:00`
+              );
 
               // Add days to get the cell date (still at noon ET)
               const cellDateNoonET = new Date(baseDateNoonET);
@@ -1589,11 +1620,9 @@
               const cellET = getETComponents(cellDateNoonET);
               const nowET = getETComponents(now);
 
-              // Check if this cell represents the current hour
+              // Check if this cell represents the current hour (same day of week and hour)
               if (
-                cellET.year === nowET.year &&
-                cellET.month === nowET.month &&
-                cellET.day === nowET.day &&
+                cellET.dayOfWeek === nowET.dayOfWeek &&
                 hourIndex === nowET.hour
               ) {
                 isCurrentTime = true;
@@ -1603,8 +1632,13 @@
               if (
                 cellET.year > nowET.year ||
                 (cellET.year === nowET.year && cellET.month > nowET.month) ||
-                (cellET.year === nowET.year && cellET.month === nowET.month && cellET.day > nowET.day) ||
-                (cellET.year === nowET.year && cellET.month === nowET.month && cellET.day === nowET.day && hourIndex > nowET.hour)
+                (cellET.year === nowET.year &&
+                  cellET.month === nowET.month &&
+                  cellET.day > nowET.day) ||
+                (cellET.year === nowET.year &&
+                  cellET.month === nowET.month &&
+                  cellET.day === nowET.day &&
+                  hourIndex > nowET.hour)
               ) {
                 isFuture = true;
               }
@@ -1612,7 +1646,7 @@
 
             // Apply future style if needed
             if (isFuture && !isDisabled) {
-              displayValue = "";  // Empty for future
+              displayValue = ""; // Empty for future
               colorLevel = "level-future";
             }
 
@@ -1665,7 +1699,9 @@
         const container = document.getElementById("heatmapContainer");
 
         // Disable the update button
-        const updateBtn = document.querySelector('.btn-primary[onclick="loadData()"]');
+        const updateBtn = document.querySelector(
+          '.btn-primary[onclick="loadData()"]'
+        );
         if (updateBtn) {
           updateBtn.disabled = true;
           updateBtn.textContent = "🔄 Updating...";
@@ -1797,7 +1833,7 @@
         }
 
         // Only show error if no previous data exists
-        if (!container.querySelector('.heatmap-table')) {
+        if (!container.querySelector(".heatmap-table")) {
           container.innerHTML = `
              <div class="error">
                <h3>Unable to load tweet data</h3>
@@ -2002,13 +2038,16 @@
 
             // Use local date format to avoid UTC conversion issues
             const startYear = range.start.getFullYear();
-            const startMonth = String(range.start.getMonth() + 1).padStart(2, '0');
-            const startDayNum = String(range.start.getDate()).padStart(2, '0');
+            const startMonth = String(range.start.getMonth() + 1).padStart(
+              2,
+              "0"
+            );
+            const startDayNum = String(range.start.getDate()).padStart(2, "0");
             const startStr = `${startYear}-${startMonth}-${startDayNum}`;
 
             const endYear = range.end.getFullYear();
-            const endMonth = String(range.end.getMonth() + 1).padStart(2, '0');
-            const endDayNum = String(range.end.getDate()).padStart(2, '0');
+            const endMonth = String(range.end.getMonth() + 1).padStart(2, "0");
+            const endDayNum = String(range.end.getDate()).padStart(2, "0");
             const endStr = `${endYear}-${endMonth}-${endDayNum}`;
 
             const startLabel = range.start.toLocaleDateString("en-US", {
