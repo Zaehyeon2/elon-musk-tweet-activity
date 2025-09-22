@@ -1,5 +1,71 @@
 # Elon Tracker - Important Development Notes
 
+## Styling Guidelines - IMPORTANT
+
+### Always Use Tailwind CSS Classes
+
+**IMPORTANT**: This application uses Tailwind CSS. Always use Tailwind utility classes instead of inline styles or custom CSS.
+
+#### Key Principles:
+1. **Use Tailwind classes for all styling** - Don't add custom CSS unless absolutely necessary
+2. **Use responsive prefixes** - `sm:`, `md:`, `lg:`, `xl:` for responsive design
+3. **Use dark mode variants** - `dark:` prefix for dark mode styling
+4. **Avoid !important** - Use Tailwind's utility classes which have proper specificity
+
+#### Common Patterns:
+```html
+<!-- CORRECT - Using Tailwind classes -->
+<span class="text-[9px] sm:text-[11px]">Text</span>
+
+<!-- WRONG - Using inline styles -->
+<span style="font-size: 11px">Text</span>
+
+<!-- WRONG - Using custom CSS -->
+<style>
+  .custom-text { font-size: 11px; }
+</style>
+```
+
+#### Responsive Text Sizes:
+- Mobile: `text-[9px]`
+- Tablet/Desktop: `sm:text-[11px]`
+
+### UI Modification Checklist
+
+**CRITICAL**: When making ANY UI modifications, you MUST check ALL views:
+
+1. **Mobile View** (< 640px)
+   - Check font sizes, padding, margins
+   - Verify touch targets are at least 44px
+   - Ensure no horizontal overflow
+   - Test portrait and landscape orientations
+
+2. **Tablet View** (640px - 1024px)
+   - Check `sm:` and `md:` breakpoint classes
+   - Verify grid layouts (especially 3x2, 2x2 configurations)
+   - Ensure proper spacing between elements
+
+3. **Desktop View** (> 1024px)
+   - Check `lg:` and `xl:` breakpoint classes
+   - Verify flex and grid layouts
+   - Ensure consistent alignment and spacing
+
+4. **Dark Mode**
+   - Test all views in both light and dark modes
+   - Verify `dark:` variant classes are applied
+   - Check contrast and readability
+
+#### Common Areas to Check:
+- Header (title, buttons, dropdown)
+- Statistics/Indicators section
+- Predictions section
+- Heatmap titles and cells
+- Legend/color scale
+- TOTALS/AVG rows
+- Hour labels
+
+**Remember**: One change can affect multiple views. Always test thoroughly!
+
 ## Timezone Handling - CRITICAL
 
 ### Always Use ET (Eastern Time) for All Date/Time Operations

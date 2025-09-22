@@ -123,14 +123,6 @@
           table-layout: fixed;
           width: 100%;
         }
-
-        /* Smaller cells on mobile */
-        #heatmapContainer td,
-        #averageHeatmapContainer td {
-          font-size: 9px !important;
-          padding: 0 !important;
-          min-width: auto !important;
-        }
       }
 
     </style>
@@ -153,7 +145,7 @@
           <div class="mb-3 lg:mb-0">
             <select
               id="weekRange"
-              class="w-full px-3 py-2.5 lg:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold min-h-[44px] lg:min-h-[38px]"
+              class="w-full px-3 py-2.5 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold min-h-[44px]"
               onchange="updateDateRange()"
             >
               <option value="">Select a week range...</option>
@@ -164,7 +156,7 @@
           <div class="grid grid-cols-2 lg:flex lg:justify-between gap-2">
           <button
             onclick="handleButtonClick(event, () => loadData(true))"
-            class="px-3 py-2.5 sm:px-4 lg:flex-1 lg:px-3 lg:py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] whitespace-nowrap"
+            class="px-3 py-2.5 lg:flex-1 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] whitespace-nowrap"
           >
             <span class="lg:hidden">🔄 Update</span>
             <span class="hidden lg:inline">🔄 Update</span>
@@ -172,21 +164,21 @@
           <button
             onclick="handleButtonClick(event, toggleAutoRefresh)"
             id="autoRefreshBtn"
-            class="px-3 py-2.5 sm:px-4 lg:flex-1 lg:px-3 lg:py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] whitespace-nowrap"
+            class="px-3 py-2.5 lg:flex-1 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] whitespace-nowrap"
           >
-            <span class="lg:hidden">⏰ Auto: ON</span>
+            <span class="lg:hidden">⏰ Auto</span>
             <span class="hidden lg:inline">⏰ Auto Refresh</span>
           </button>
           <button
             onclick="handleButtonClick(event, downloadCSV)"
-            class="px-3 py-2.5 sm:px-4 lg:flex-1 lg:px-3 lg:py-2 text-xs sm:text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] whitespace-nowrap"
+            class="px-3 py-2.5 lg:flex-1 text-xs sm:text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] whitespace-nowrap"
           >
             <span class="lg:hidden">📥 CSV</span>
             <span class="hidden lg:inline">📥 Download</span>
           </button>
           <button
             onclick="handleButtonClick(event, toggleDarkMode)"
-            class="px-3 py-2.5 sm:px-4 lg:w-12 lg:px-2 lg:py-2 text-xs sm:text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] flex items-center justify-center"
+            class="px-3 py-2.5 lg:w-12 lg:px-0 text-xs sm:text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] flex items-center justify-center"
           >
             <span id="darkModeIcon" class="text-base">🌙</span>
           </button>
@@ -198,56 +190,56 @@
       <div class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-4">
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
-          <div class="text-gray-500 dark:text-gray-300 text-[10px] sm:text-xs font-bold mb-1">
+          <div class="text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1">
             Current Week
           </div>
           <div
             id="currentValue"
-            class="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100"
+            class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100"
           >
             -
           </div>
         </div>
         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
-          <div class="text-gray-500 dark:text-gray-300 text-[10px] sm:text-xs font-bold mb-1">
+          <div class="text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1">
             4-Week Avg
           </div>
           <div
             id="avgValue"
-            class="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100"
+            class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100"
           >
             -
           </div>
         </div>
         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
-          <div class="text-gray-500 dark:text-gray-300 text-[10px] sm:text-xs font-bold mb-1">
+          <div class="text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1">
             Peak Hour
           </div>
           <div
             id="peakHour"
-            class="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100"
+            class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100"
           >
             -
           </div>
         </div>
         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
-          <div class="text-gray-500 dark:text-gray-300 text-[10px] sm:text-xs font-bold mb-1">
+          <div class="text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1">
             Most Active Day
           </div>
           <div
             id="mostActiveDay"
-            class="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100"
+            class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100"
           >
             -
           </div>
         </div>
         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
-          <div class="text-gray-500 dark:text-gray-300 text-[10px] sm:text-xs font-bold mb-1">
+          <div class="text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1">
             Last Updated
           </div>
           <div
             id="lastUpdated"
-            class="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100"
+            class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100"
           >
             -
           </div>
@@ -256,12 +248,12 @@
           class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg hidden"
           id="refreshCountdownIndicator"
         >
-          <div class="text-gray-500 dark:text-gray-300 text-[10px] sm:text-xs font-bold mb-1">
+          <div class="text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1">
             Next Refresh
           </div>
           <div
             id="refreshCountdown"
-            class="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100"
+            class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100"
           >
             -
           </div>
@@ -274,54 +266,54 @@
         class="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-3 mb-4"
       >
         <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-          <div class="bg-white dark:bg-gray-800 p-2 rounded-lg">
+          <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
             <div
-              class="flex items-center text-gray-500 dark:text-gray-300 text-[10px] sm:text-xs font-bold mb-1"
+              class="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1"
             >
-              <span class="mr-1 text-[10px] sm:text-xs">⏱️</span> Current Pace
+              <span class="mr-1 text-xs sm:text-sm">⏱️</span> Current Pace
             </div>
             <div
               id="currentPace"
-              class="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100"
+              class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100"
             >
               -
             </div>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-2 rounded-lg">
+          <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
             <div
-              class="flex items-center text-gray-500 dark:text-gray-300 text-[10px] sm:text-xs font-bold mb-1"
+              class="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1"
             >
-              <span class="mr-1 text-[10px] sm:text-xs">🔮</span> Next 24h
+              <span class="mr-1 text-xs sm:text-sm">🔮</span> Next 24h
             </div>
             <div
               id="next24hPrediction"
-              class="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100"
+              class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100"
             >
               -
             </div>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-2 rounded-lg">
+          <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
             <div
-              class="flex items-center text-gray-500 dark:text-gray-300 text-[10px] sm:text-xs font-bold mb-1"
+              class="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1"
             >
-              <span class="mr-1 text-[10px] sm:text-xs">🎯</span> End of Range
+              <span class="mr-1 text-xs sm:text-sm">🎯</span> End of Range
             </div>
             <div
               id="weekEndPrediction"
-              class="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100"
+              class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100"
             >
               -
             </div>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-2 rounded-lg">
+          <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
             <div
-              class="flex items-center text-gray-500 dark:text-gray-300 text-[10px] sm:text-xs font-bold mb-1"
+              class="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1"
             >
-              <span class="mr-1 text-[10px] sm:text-xs">📊</span> Trend
+              <span class="mr-1 text-xs sm:text-sm">📊</span> Trend
             </div>
             <div
               id="trendIndicator"
-              class="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100"
+              class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100"
             >
               -
             </div>
@@ -359,7 +351,7 @@
       <div
         class="flex items-center justify-center gap-2 mt-4 sm:mt-5 lg:mt-6 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
       >
-        <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
+        <span class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400"
           >Less</span
         >
         <div class="flex gap-1">
@@ -379,7 +371,7 @@
             class="w-6 h-6 rounded bg-green-700 dark:bg-green-500 border border-gray-300 dark:border-gray-600"
           ></div>
         </div>
-        <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
+        <span class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400"
           >More</span
         >
       </div>
@@ -1001,9 +993,9 @@
       // Helper function to create totals row
       function createTotalsRow(totals, label = "TOTALS") {
         let html = '<tr class="bg-gray-100 dark:bg-gray-800 font-bold">';
-        html += `<td class="p-2 text-center text-xs text-gray-700 dark:text-gray-300 font-bold">${label}</td>`;
+        html += `<td class="h-7 p-0 relative text-center text-gray-700 dark:text-gray-300 font-bold"><span class="absolute inset-0 flex items-center justify-center text-[9px] sm:text-[11px]">${label}</span></td>`;
         totals.forEach((total) => {
-          html += `<td class="p-2 text-center text-xs text-gray-700 dark:text-gray-300 font-bold border border-gray-200 dark:border-gray-700">${total}</td>`;
+          html += `<td class="h-7 p-0 relative text-center text-gray-700 dark:text-gray-300 font-bold border border-gray-200 dark:border-gray-700"><span class="absolute inset-0 flex items-center justify-center text-[9px] sm:text-[11px]">${total}</span></td>`;
         });
         html += "</tr>";
         return html;
@@ -1769,7 +1761,7 @@
         // Data rows
         hours.forEach((hour, hourIndex) => {
           html += '<tr class="border-b border-gray-100 dark:border-gray-800">';
-          html += `<td class="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold px-1 py-1 text-center text-xs whitespace-nowrap border-r border-gray-200 dark:border-gray-700">${hour}</td>`;
+          html += `<td class="h-7 p-0 relative bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold text-center whitespace-nowrap border-r border-gray-200 dark:border-gray-700"><span class="absolute inset-0 flex items-center justify-center text-[9px] sm:text-[11px]">${hour}</span></td>`;
 
           days.forEach((day, dayIndex) => {
             let value = grid[hourIndex][dayIndex];
@@ -1851,7 +1843,7 @@
                           onmouseout="hideTooltip()"
                           data-value="${value}">`;
             }
-            html += `<span class="absolute inset-0 flex items-center justify-center text-[11px] font-semibold ${textColor} overflow-hidden pointer-events-none transition-all duration-300">${displayValue}</span>`;
+            html += `<span class="absolute inset-0 flex items-center justify-center text-[9px] sm:text-[11px] font-semibold ${textColor} overflow-hidden pointer-events-none transition-all duration-300">${displayValue}</span>`;
             html += "</td>";
           });
 
@@ -1970,7 +1962,7 @@
         // Data rows
         hours.forEach((hour, hourIndex) => {
           html += '<tr class="border-b border-gray-100 dark:border-gray-800">';
-          html += `<td class="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold px-1 py-1 text-center text-xs whitespace-nowrap border-r border-gray-200 dark:border-gray-700">${hour}</td>`;
+          html += `<td class="h-7 p-0 relative bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold text-center whitespace-nowrap border-r border-gray-200 dark:border-gray-700"><span class="absolute inset-0 flex items-center justify-center text-[9px] sm:text-[11px]">${hour}</span></td>`;
 
           days.forEach((day, dayIndex) => {
             let value = grid[hourIndex][dayIndex];
@@ -2093,7 +2085,7 @@
                           onmouseout="hideTooltip()"
                           data-value="${value}">`;
             }
-            html += `<span class="absolute inset-0 flex items-center justify-center text-[11px] font-semibold ${textColor} overflow-hidden pointer-events-none transition-all duration-300">${displayValue}</span>`;
+            html += `<span class="absolute inset-0 flex items-center justify-center text-[9px] sm:text-[11px] font-semibold ${textColor} overflow-hidden pointer-events-none transition-all duration-300">${displayValue}</span>`;
             html += "</td>";
           });
 
@@ -3068,9 +3060,9 @@
             clearInterval(countdownInterval);
             countdownInterval = null;
           }
-          btn.innerHTML = '<span class="lg:hidden">⏰ Auto: OFF</span><span class="hidden lg:inline">⏰ Auto Refresh</span>';
+          btn.innerHTML = '<span class="lg:hidden">⏰ Auto</span><span class="hidden lg:inline">⏰ Auto Refresh</span>';
           btn.className =
-            "px-3 py-2.5 sm:px-4 lg:px-3 lg:py-2 text-xs sm:text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] whitespace-nowrap";
+            "px-3 py-2.5 lg:flex-1 text-xs sm:text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] whitespace-nowrap";
           countdownIndicator.classList.add("hidden");
         } else {
           // Enable auto refresh
@@ -3084,9 +3076,9 @@
             }
           }, AUTO_REFRESH_INTERVAL);
 
-          btn.innerHTML = '<span class="lg:hidden">⏰ Auto: ON</span><span class="hidden lg:inline">⏰ Auto Refresh</span>';
+          btn.innerHTML = '<span class="lg:hidden">⏰ Auto</span><span class="hidden lg:inline">⏰ Auto Refresh</span>';
           btn.className =
-            "px-3 py-2.5 sm:px-4 lg:px-3 lg:py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] whitespace-nowrap";
+            "px-3 py-2.5 lg:flex-1 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] whitespace-nowrap";
           countdownIndicator.classList.remove("hidden");
           startRefreshCountdown();
         }
@@ -3287,9 +3279,9 @@
             }
           }, AUTO_REFRESH_INTERVAL);
 
-          btn.innerHTML = '<span class="lg:hidden">⏰ Auto: ON</span><span class="hidden lg:inline">⏰ Auto Refresh</span>';
+          btn.innerHTML = '<span class="lg:hidden">⏰ Auto</span><span class="hidden lg:inline">⏰ Auto Refresh</span>';
           btn.className =
-            "px-3 py-2.5 sm:px-4 lg:px-3 lg:py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] whitespace-nowrap";
+            "px-3 py-2.5 lg:flex-1 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] whitespace-nowrap";
           countdownIndicator.classList.remove("hidden");
         }
 
