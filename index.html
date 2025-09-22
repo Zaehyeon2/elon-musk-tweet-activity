@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Elon Musk Tweet Activity Heatmap</title>
+
+    <!-- Resource hints for better performance -->
+    <link rel="dns-prefetch" href="//corsproxy.io">
+    <link rel="dns-prefetch" href="//www.xtracker.io">
+    <link rel="preconnect" href="https://corsproxy.io" crossorigin>
+    <link rel="preconnect" href="https://www.xtracker.io" crossorigin>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -1149,8 +1156,20 @@
         };
       }
 
+      // Memoized prediction calculation
+      const calculatePredictionsMemoized = memoize(
+        function(currentData, avgData) {
+          return calculatePredictionsInternal(currentData, avgData);
+        },
+        (curr, avg) => `pred_${curr?.current}_${avg?.current}_${curr?.dateRange?.start}_${curr?.dateRange?.end}`
+      );
+
       // Prediction functions
       function calculatePredictions(currentData, avgData) {
+        return calculatePredictionsMemoized(currentData, avgData);
+      }
+
+      function calculatePredictionsInternal(currentData, avgData) {
         // Validate input data
         if (!currentData || !avgData)
           return { next24h: 0, endOfRange: 0, trend: "stable", pace: "-" };
@@ -1386,8 +1405,20 @@
         };
       }
 
+      // Memoized version of 4-week average calculation
+      const calculate4WeekAverageMemoized = memoize(
+        function(tweets, currentStartDate, currentEndDate) {
+          return calculate4WeekAverageInternal(tweets, currentStartDate, currentEndDate);
+        },
+        (tweets, start, end) => `avg_${start}_${end}_${tweets.length}`
+      );
+
       // Calculate 4-week average
       function calculate4WeekAverage(tweets, currentStartDate, currentEndDate) {
+        return calculate4WeekAverageMemoized(tweets, currentStartDate, currentEndDate);
+      }
+
+      function calculate4WeekAverageInternal(tweets, currentStartDate, currentEndDate) {
         if (!tweets || tweets.length === 0) return null;
 
         const hours = Array.from({ length: 24 }, (_, i) => formatHour(i));
@@ -1553,8 +1584,14 @@
         };
       }
 
-      // Render average heatmap
+      // Render average heatmap with requestAnimationFrame
       function renderAverageHeatmap(data) {
+        requestAnimationFrame(() => {
+          renderAverageHeatmapInternal(data);
+        });
+      }
+
+      function renderAverageHeatmapInternal(data) {
         const container = document.getElementById("averageHeatmapContainer");
 
         if (!data) {
@@ -1567,9 +1604,13 @@
         const { grid, hours, days, totals, current, maxValue, dateRange } =
           data;
 
-        // Update 4-week average indicator
-        document.getElementById("avgValue").textContent =
-          Math.round(current).toLocaleString();
+        // Batch update 4-week average indicator
+        requestAnimationFrame(() => {
+          const element = document.getElementById("avgValue");
+          if (element) {
+            element.textContent = Math.round(current).toLocaleString();
+          }
+        });
 
         let html = '<table class="w-full table-fixed border-collapse">';
         html += createColgroup(days.length);
@@ -1667,11 +1708,26 @@
         html += createTotalsRow(totals, "AVG");
 
         html += "</table>";
-        container.innerHTML = html;
+
+        // Use DocumentFragment for better performance
+        const fragment = document.createDocumentFragment();
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        while (temp.firstChild) {
+          fragment.appendChild(temp.firstChild);
+        }
+        container.innerHTML = '';
+        container.appendChild(fragment);
       }
 
-      // Render heatmap
+      // Render heatmap with requestAnimationFrame
       function renderHeatmap(data) {
+        requestAnimationFrame(() => {
+          renderHeatmapInternal(data);
+        });
+      }
+
+      function renderHeatmapInternal(data) {
         const container = document.getElementById("heatmapContainer");
 
         if (!data) {
@@ -1692,11 +1748,26 @@
           dateRange,
         } = data;
 
-        // Update indicators
-        document.getElementById("currentValue").textContent =
-          current.toLocaleString();
-        document.getElementById("peakHour").textContent = peakHour;
-        document.getElementById("mostActiveDay").textContent = mostActiveDay;
+        // Batch DOM updates to minimize reflows
+        requestAnimationFrame(() => {
+          const updates = [
+            { id: "currentValue", value: current.toLocaleString() },
+            { id: "peakHour", value: peakHour },
+            { id: "mostActiveDay", value: mostActiveDay }
+          ];
+
+          // Batch all reads first, then writes
+          const elements = new Map();
+          updates.forEach(({ id }) => {
+            elements.set(id, document.getElementById(id));
+          });
+
+          // Then batch all writes
+          updates.forEach(({ id, value }) => {
+            const element = elements.get(id);
+            if (element) element.textContent = value;
+          });
+        });
 
         let html = '<table class="w-full table-fixed border-collapse">';
         html += createColgroup(days.length);
@@ -1835,11 +1906,62 @@
         html += createTotalsRow(totals, "TOTALS");
 
         html += "</table>";
-        container.innerHTML = html;
+
+        // Use DocumentFragment for better performance
+        const fragment = document.createDocumentFragment();
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        while (temp.firstChild) {
+          fragment.appendChild(temp.firstChild);
+        }
+        container.innerHTML = '';
+        container.appendChild(fragment);
       }
 
       // Track if data is currently loading
       let isLoadingData = false;
+
+      // Debounce helper function
+      function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+          const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      }
+
+      // Request queue to prevent duplicate API calls
+      const requestQueue = new Map();
+
+      // Memoization cache for expensive calculations
+      const memoCache = new Map();
+      const MEMO_CACHE_MAX = 50;
+
+      // Generic memoization function
+      function memoize(fn, keyGenerator) {
+        return function(...args) {
+          const key = keyGenerator ? keyGenerator(...args) : JSON.stringify(args);
+
+          if (memoCache.has(key)) {
+            debugLog('Returning memoized result for:', key);
+            return memoCache.get(key);
+          }
+
+          // LRU cache eviction
+          if (memoCache.size >= MEMO_CACHE_MAX) {
+            const firstKey = memoCache.keys().next().value;
+            memoCache.delete(firstKey);
+          }
+
+          const result = fn.apply(this, args);
+          memoCache.set(key, result);
+          return result;
+        };
+      }
 
       // Cache Module - Handles localStorage caching
       const Cache = {
@@ -1890,7 +2012,16 @@
       // API Module - Handles all API interactions
       const API = {
         async fetchTweetData() {
-          const response = await fetch(
+          const requestKey = 'tweet-data';
+
+          // Check if request is already in progress
+          if (requestQueue.has(requestKey)) {
+            debugLog('Returning existing request promise');
+            return requestQueue.get(requestKey);
+          }
+
+          // Create new request promise
+          const requestPromise = fetch(
             "https://corsproxy.io/?https://www.xtracker.io/api/download",
             {
               method: "POST",
@@ -1898,14 +2029,21 @@
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({ handle: "elonmusk", platform: "X" }),
+              signal: AbortSignal.timeout(30000) // 30 second timeout
             }
-          );
+          ).then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+          }).finally(() => {
+            // Clean up request from queue
+            requestQueue.delete(requestKey);
+          });
 
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-          return await response.text();
+          // Store in queue
+          requestQueue.set(requestKey, requestPromise);
+          return requestPromise;
         },
 
         validateCSVData(csvText) {
@@ -2008,15 +2146,32 @@
         },
 
         updateIndicator(id, value) {
-          const element = document.getElementById(id);
-          if (element) {
-            element.textContent = value;
-          }
+          requestAnimationFrame(() => {
+            const element = document.getElementById(id);
+            if (element) {
+              element.textContent = value;
+            }
+          });
         },
       };
 
+      // Debounced load data function
+      const debouncedLoadData = debounce(async function(forceRefresh = false) {
+        await loadDataInternal(forceRefresh);
+      }, 500); // 500ms debounce
+
       // Load data from X Tracker API
       async function loadData(forceRefresh = false) {
+        // Use debounced version for manual triggers
+        if (!forceRefresh) {
+          debouncedLoadData(forceRefresh);
+        } else {
+          // For force refresh, call directly
+          await loadDataInternal(forceRefresh);
+        }
+      }
+
+      async function loadDataInternal(forceRefresh = false) {
         // Skip if already loading
         if (isLoadingData) {
           debugLog("Skipping loadData - already loading");
@@ -2067,7 +2222,7 @@
             isLoadingData = false;
 
             // Fetch fresh data in background
-            setTimeout(() => loadData(true), 1000);
+            setTimeout(() => loadDataInternal(true), 1000);
             return;
           }
         }
@@ -2128,18 +2283,22 @@
           renderAverageHeatmap(avgData);
           debugLog("Average heatmap rendered");
 
-          // Calculate and display predictions
+          // Calculate and display predictions (batched)
           const predictions = calculatePredictions(currentData, avgData);
-          UI.updateIndicator("currentPace", predictions.pace);
-          UI.updateIndicator(
-            "next24hPrediction",
-            predictions.next24h.toLocaleString() + " tweets"
-          );
-          UI.updateIndicator(
-            "weekEndPrediction",
-            predictions.endOfRange.toLocaleString() + " tweets"
-          );
-          UI.updateIndicator("trendIndicator", predictions.trend);
+          requestAnimationFrame(() => {
+            const updates = [
+              { id: "currentPace", value: predictions.pace },
+              { id: "next24hPrediction", value: predictions.next24h.toLocaleString() + " tweets" },
+              { id: "weekEndPrediction", value: predictions.endOfRange.toLocaleString() + " tweets" },
+              { id: "trendIndicator", value: predictions.trend }
+            ];
+
+            // Batch DOM updates
+            updates.forEach(({ id, value }) => {
+              const element = document.getElementById(id);
+              if (element) element.textContent = value;
+            });
+          });
 
           // Update last refresh time and start countdown
           updateLastRefreshTime();
