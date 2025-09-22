@@ -118,62 +118,67 @@
     </style>
   </head>
   <body
-    class="bg-gray-50 dark:bg-gray-900 p-5 transition-colors duration-300 font-sans"
+    class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 lg:p-5 transition-colors duration-300 font-sans"
   >
     <div
-      class="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-5 transition-colors duration-300"
+      class="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-5 lg:p-6 transition-colors duration-300"
     >
-      <div
-        class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700 flex-wrap gap-3"
-      >
-        <h1 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
-          <span class="hidden sm:inline">🐦</span> Elon Musk Tweet Activity
-        </h1>
-        <div class="flex items-center gap-2 flex-wrap">
-          <div class="flex items-center gap-2">
-            <label
-              for="weekRange"
-              class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-bold hidden sm:inline"
-              >Date Range:</label
-            >
+      <!-- Title Section - Independent on Desktop -->
+      <h1 class="text-xl sm:text-2xl md:text-2xl font-bold text-gray-900 dark:text-gray-100 text-center mb-4 pb-3 sm:pb-4 border-b border-gray-200 dark:border-gray-700">
+        <span class="hidden sm:inline">🐦</span> Elon Musk Tweet Activity
+      </h1>
+
+      <!-- Controls Section - Mobile/Tablet: Stacked, Desktop: Single Row -->
+      <div class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-4">
+        <div class="flex flex-col lg:grid lg:grid-cols-2 lg:gap-4">
+          <!-- Date Range - 50% -->
+          <div class="mb-3 lg:mb-0">
             <select
               id="weekRange"
-              class="px-2 py-2.5 sm:px-4 md:px-3 md:py-1.5 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold min-h-[44px] md:min-h-0 max-w-full"
+              class="w-full px-3 py-2.5 lg:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold min-h-[44px] lg:min-h-[38px]"
               onchange="updateDateRange()"
             >
               <option value="">Select a week range...</option>
             </select>
           </div>
+
+          <!-- Button Controls - 50% -->
+          <div class="grid grid-cols-2 lg:flex lg:justify-between gap-2">
           <button
             onclick="handleButtonClick(event, () => loadData(true))"
-            class="px-4 py-2.5 md:px-3 md:py-1.5 text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] md:min-h-0"
+            class="px-3 py-2.5 sm:px-4 lg:flex-1 lg:px-3 lg:py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] whitespace-nowrap"
           >
-            🔄 Update Now
+            <span class="lg:hidden">🔄 Update</span>
+            <span class="hidden lg:inline">🔄 Update</span>
           </button>
           <button
             onclick="handleButtonClick(event, toggleAutoRefresh)"
             id="autoRefreshBtn"
-            class="px-4 py-2.5 md:px-3 md:py-1.5 text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] md:min-h-0"
+            class="px-3 py-2.5 sm:px-4 lg:flex-1 lg:px-3 lg:py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] whitespace-nowrap"
           >
-            ⏰ Auto Refresh: ON
+            <span class="lg:hidden">⏰ Auto: ON</span>
+            <span class="hidden lg:inline">⏰ Auto Refresh</span>
           </button>
           <button
             onclick="handleButtonClick(event, downloadCSV)"
-            class="px-4 py-2.5 md:px-3 md:py-1.5 text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] md:min-h-0"
+            class="px-3 py-2.5 sm:px-4 lg:flex-1 lg:px-3 lg:py-2 text-xs sm:text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] whitespace-nowrap"
           >
-            📥 Download Data
+            <span class="lg:hidden">📥 CSV</span>
+            <span class="hidden lg:inline">📥 Download</span>
           </button>
           <button
             onclick="handleButtonClick(event, toggleDarkMode)"
-            class="px-4 py-2.5 md:px-3 md:py-1.5 text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] md:min-h-0"
+            class="px-3 py-2.5 sm:px-4 lg:w-12 lg:px-2 lg:py-2 text-xs sm:text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] flex items-center justify-center"
           >
-            <span id="darkModeIcon">🌙</span>
-            <span id="darkModeText" class="hidden sm:inline">Dark Mode</span>
+            <span id="darkModeIcon" class="text-base">🌙</span>
           </button>
         </div>
       </div>
+      </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 my-4">
+      <!-- Statistics Section -->
+      <div class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
           <div class="text-gray-500 dark:text-gray-300 text-[10px] sm:text-xs font-bold mb-1">
             Current Week
@@ -244,9 +249,11 @@
           </div>
         </div>
       </div>
+      </div>
 
+      <!-- Predictions Section -->
       <div
-        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-3 mt-3"
+        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-3 mb-4"
       >
         <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
           <div class="bg-white dark:bg-gray-800 p-2 rounded-lg">
@@ -304,35 +311,35 @@
         </div>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-6 mt-6">
+      <div class="grid lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-6 mt-4 sm:mt-5 lg:mt-6">
         <div
-          class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 overflow-hidden"
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 overflow-hidden flex flex-col"
         >
           <h3
-            class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
+            class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4"
           >
             Current Week
           </h3>
-          <div id="heatmapContainer" class="overflow-x-auto scroll-indicator">
+          <div id="heatmapContainer" class="overflow-x-auto scroll-indicator flex-1">
             <!-- Skeleton loader will be inserted here -->
           </div>
         </div>
         <div
-          class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 overflow-hidden"
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 overflow-hidden flex flex-col"
         >
           <h3
-            class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
+            class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4"
           >
             4-Week Average
           </h3>
-          <div id="averageHeatmapContainer" class="overflow-x-auto scroll-indicator">
+          <div id="averageHeatmapContainer" class="overflow-x-auto scroll-indicator flex-1">
             <!-- Skeleton loader will be inserted here -->
           </div>
         </div>
       </div>
 
       <div
-        class="flex items-center justify-center gap-2 mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+        class="flex items-center justify-center gap-2 mt-4 sm:mt-5 lg:mt-6 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
       >
         <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
           >Less</span
@@ -3049,9 +3056,9 @@
             clearInterval(countdownInterval);
             countdownInterval = null;
           }
-          btn.textContent = "⏰ Auto Refresh: OFF";
+          btn.innerHTML = '<span class="lg:hidden">⏰ Auto: OFF</span><span class="hidden lg:inline">⏰ Auto Refresh</span>';
           btn.className =
-            "px-3 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-bold transition-all duration-200 transform active:scale-95";
+            "px-3 py-2.5 sm:px-4 lg:px-3 lg:py-2 text-xs sm:text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] whitespace-nowrap";
           countdownIndicator.classList.add("hidden");
         } else {
           // Enable auto refresh
@@ -3065,9 +3072,9 @@
             }
           }, AUTO_REFRESH_INTERVAL);
 
-          btn.textContent = "⏰ Auto Refresh: ON";
+          btn.innerHTML = '<span class="lg:hidden">⏰ Auto: ON</span><span class="hidden lg:inline">⏰ Auto Refresh</span>';
           btn.className =
-            "px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95";
+            "px-3 py-2.5 sm:px-4 lg:px-3 lg:py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] whitespace-nowrap";
           countdownIndicator.classList.remove("hidden");
           startRefreshCountdown();
         }
@@ -3128,12 +3135,10 @@
           html.classList.remove("dark");
           localStorage.setItem("theme", "light");
           document.getElementById("darkModeIcon").textContent = "🌙";
-          document.getElementById("darkModeText").textContent = "Dark Mode";
         } else {
           html.classList.add("dark");
           localStorage.setItem("theme", "dark");
           document.getElementById("darkModeIcon").textContent = "☀️";
-          document.getElementById("darkModeText").textContent = "Light Mode";
         }
       }
 
@@ -3147,7 +3152,6 @@
         if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
           document.documentElement.classList.add("dark");
           document.getElementById("darkModeIcon").textContent = "☀️";
-          document.getElementById("darkModeText").textContent = "Light Mode";
         }
       }
 
@@ -3270,9 +3274,9 @@
             }
           }, AUTO_REFRESH_INTERVAL);
 
-          btn.textContent = "⏰ Auto Refresh: ON";
+          btn.innerHTML = '<span class="lg:hidden">⏰ Auto: ON</span><span class="hidden lg:inline">⏰ Auto Refresh</span>';
           btn.className =
-            "px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95";
+            "px-3 py-2.5 sm:px-4 lg:px-3 lg:py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] lg:min-h-[38px] whitespace-nowrap";
           countdownIndicator.classList.remove("hidden");
         }
 
