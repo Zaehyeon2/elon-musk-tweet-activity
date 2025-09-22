@@ -115,6 +115,24 @@
         }
       }
 
+      /* Mobile - show full heatmap without scroll */
+      @media (max-width: 768px) {
+        /* Make table fit in container */
+        #heatmapContainer table,
+        #averageHeatmapContainer table {
+          table-layout: fixed;
+          width: 100%;
+        }
+
+        /* Smaller cells on mobile */
+        #heatmapContainer td,
+        #averageHeatmapContainer td {
+          font-size: 9px !important;
+          padding: 0 !important;
+          min-width: auto !important;
+        }
+      }
+
     </style>
   </head>
   <body
@@ -313,26 +331,26 @@
 
       <div class="grid lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-6 mt-4 sm:mt-5 lg:mt-6">
         <div
-          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 overflow-hidden flex flex-col"
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 flex flex-col"
         >
           <h3
             class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4"
           >
             Current Week
           </h3>
-          <div id="heatmapContainer" class="overflow-x-auto scroll-indicator flex-1">
+          <div id="heatmapContainer" class="md:overflow-x-auto md:scroll-indicator flex-1">
             <!-- Skeleton loader will be inserted here -->
           </div>
         </div>
         <div
-          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 overflow-hidden flex flex-col"
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 flex flex-col"
         >
           <h3
             class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4"
           >
             4-Week Average
           </h3>
-          <div id="averageHeatmapContainer" class="overflow-x-auto scroll-indicator flex-1">
+          <div id="averageHeatmapContainer" class="md:overflow-x-auto md:scroll-indicator flex-1">
             <!-- Skeleton loader will be inserted here -->
           </div>
         </div>
@@ -526,27 +544,11 @@
         }
       }
 
-      // Handle touch events for mobile
+      // Handle touch events for mobile - DISABLED to prevent scroll issues
       let touchTimeout = null;
       function handleCellTouch(event, content) {
-        event.preventDefault(); // Prevent default touch behavior
-        event.stopPropagation();
-
-        // Trigger haptic feedback
-        triggerHaptic('light');
-
-        // Clear any existing timeout
-        if (touchTimeout) {
-          clearTimeout(touchTimeout);
-        }
-
-        // Show tooltip
-        showTooltip(event, content);
-
-        // Auto-hide after 2 seconds
-        touchTimeout = setTimeout(() => {
-          hideTooltip();
-        }, 2000);
+        // Disabled - was preventing scroll on mobile
+        return;
       }
 
       // ET timezone formatter with weekday
@@ -1838,12 +1840,17 @@
               textColor = "text-white"; // High values always white
             }
 
-            html += `<td class="h-7 p-0 relative cursor-pointer transition-all duration-150 hover:z-10 heatmap-cell ${cellClasses} ${borderClasses}"
-                        onmouseover="showTooltip(event, '${tooltipText}')"
-                        onmouseout="hideTooltip()"
-                        ontouchstart="handleCellTouch(event, '${tooltipText}')"
-                        ontouchend="hideTooltip()"
-                        data-value="${value}">`;
+            // Remove tooltips on mobile to prevent scroll issues
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+              html += `<td class="h-7 p-0 relative transition-all duration-150 heatmap-cell ${cellClasses} ${borderClasses}"
+                          data-value="${value}">`;
+            } else {
+              html += `<td class="h-7 p-0 relative cursor-pointer transition-all duration-150 hover:z-10 heatmap-cell ${cellClasses} ${borderClasses}"
+                          onmouseover="showTooltip(event, '${tooltipText}')"
+                          onmouseout="hideTooltip()"
+                          data-value="${value}">`;
+            }
             html += `<span class="absolute inset-0 flex items-center justify-center text-[11px] font-semibold ${textColor} overflow-hidden pointer-events-none transition-all duration-300">${displayValue}</span>`;
             html += "</td>";
           });
@@ -2075,12 +2082,17 @@
               textColor = "text-white"; // High values always white
             }
 
-            html += `<td class="h-7 p-0 relative cursor-pointer transition-all duration-150 hover:z-10 heatmap-cell ${cellClasses} ${borderClasses}"
-                        onmouseover="showTooltip(event, '${tooltipText}')"
-                        onmouseout="hideTooltip()"
-                        ontouchstart="handleCellTouch(event, '${tooltipText}')"
-                        ontouchend="hideTooltip()"
-                        data-value="${value}">`;
+            // Remove tooltips on mobile to prevent scroll issues
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+              html += `<td class="h-7 p-0 relative transition-all duration-150 heatmap-cell ${cellClasses} ${borderClasses}"
+                          data-value="${value}">`;
+            } else {
+              html += `<td class="h-7 p-0 relative cursor-pointer transition-all duration-150 hover:z-10 heatmap-cell ${cellClasses} ${borderClasses}"
+                          onmouseover="showTooltip(event, '${tooltipText}')"
+                          onmouseout="hideTooltip()"
+                          data-value="${value}">`;
+            }
             html += `<span class="absolute inset-0 flex items-center justify-center text-[11px] font-semibold ${textColor} overflow-hidden pointer-events-none transition-all duration-300">${displayValue}</span>`;
             html += "</td>";
           });
@@ -3235,6 +3247,7 @@
           window.addEventListener('resize', () => {
             updateScrollIndicators(container);
           }, { passive: true });
+
         }
       }
 
