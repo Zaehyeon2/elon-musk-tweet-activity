@@ -710,8 +710,15 @@
         return createETNoonDate(year, month, day);
       }
 
+      // Date cache for performance
+      const dateCache = new Map();
+
       // Parse Twitter date format and convert to ET
       function parseTwitterDate(dateStr) {
+        // Check cache first
+        if (dateCache.has(dateStr)) {
+          return dateCache.get(dateStr);
+        }
         try {
           // Handle formats like "MMM DD, HH:MM:SS AM/PM EDT/EST"
           let cleanDate = dateStr.trim();
@@ -796,9 +803,13 @@
             });
           }
 
+          // Cache the result before returning
+          dateCache.set(dateStr, utcDate);
           return utcDate;
         } catch (error) {
           debugLog("Date parsing error:", error, "for:", dateStr);
+          // Cache null result to avoid re-parsing invalid dates
+          dateCache.set(dateStr, null);
           return null;
         }
       }
@@ -1450,15 +1461,23 @@
         const maxHours = 8 * 24; // Full week is 8 days = 192 hours
         const progressRatio = Math.min(hoursIntoCurrentWeek / maxHours, 1);
 
+        // Pre-calculate week start noon for optimization
+        const weekStartNoonCache = new Map();
+
         // Process each of the 4 previous weeks
         // Only count the same time period as we've progressed in current week
-        for (let week = 1; week <= 4; week++) {
+        for (let week = 1; week <= WEEKS_FOR_TREND; week++) {
           const weekStart = new Date(currentWeekStart);
           weekStart.setTime(weekStart.getTime() - (week * 7 * 24 * 60 * 60 * 1000));
 
           // For fair comparison, only look at the same elapsed time in previous weeks
           const weekEnd = new Date(weekStart);
           weekEnd.setTime(weekEnd.getTime() + hoursIntoCurrentWeek * 60 * 60 * 1000);
+
+          // Pre-calculate week start noon date once for this week
+          const weekStartET = getETComponents(weekStart);
+          const weekStartDateStr = `${weekStartET.year}-${String(weekStartET.month + 1).padStart(2, '0')}-${String(weekStartET.day).padStart(2, '0')}`;
+          const weekStartDayNoon = parseETNoonDate(weekStartDateStr);
 
           tweets.forEach((tweet) => {
             const date = parseTwitterDate(tweet.created_at);
@@ -1468,13 +1487,13 @@
 
               // Calculate day position in the week pattern using ET components
               const tweetDateStr = `${dateET.year}-${String(dateET.month + 1).padStart(2, '0')}-${String(dateET.day).padStart(2, '0')}`;
-              const weekStartET = getETComponents(weekStart);
-              const weekStartDateStr = `${weekStartET.year}-${String(weekStartET.month + 1).padStart(2, '0')}-${String(weekStartET.day).padStart(2, '0')}`;
 
-              // Use noon dates directly for day difference calculation
-              // This avoids DST issues that could occur when adjusting times
-              const tweetDayNoon = parseETNoonDate(tweetDateStr);
-              const weekStartDayNoon = parseETNoonDate(weekStartDateStr);
+              // Check cache for this date's noon value
+              let tweetDayNoon = weekStartNoonCache.get(tweetDateStr);
+              if (!tweetDayNoon) {
+                tweetDayNoon = parseETNoonDate(tweetDateStr);
+                weekStartNoonCache.set(tweetDateStr, tweetDayNoon);
+              }
 
               // Calculate days difference using noon times (more reliable across DST)
               const daysDiff = Math.round(
