@@ -586,6 +586,25 @@
     </div>
 
     <script>
+      // Configuration Constants
+      const DEBUG_MODE = false; // Set to true to enable console logging
+      const PREDICTION_WEIGHT_CURRENT = 0.7; // Weight for current week in predictions
+      const PREDICTION_WEIGHT_AVERAGE = 0.3; // Weight for 4-week average
+      const WEEKS_FOR_TREND = 4; // Number of weeks to analyze for trend
+      const HOURS_IN_DAY = 24;
+      const DAYS_IN_WEEK = 8; // Friday noon to Friday noon
+      const AUTO_REFRESH_INTERVAL = 60000; // 1 minute in milliseconds
+      const TREND_UP_THRESHOLD = 1.15; // 15% increase for upward trend
+      const TREND_DOWN_THRESHOLD = 0.85; // 15% decrease for downward trend
+
+      // Debug logging wrapper
+      const debugLog = (...args) => {
+        if (DEBUG_MODE) {
+          debugLog(...args);
+        }
+      };
+
+      // Global Variables
       let tooltip = null;
       let currentData = null;
       let rawTweets = null; // Store raw tweet data for reprocessing
@@ -723,7 +742,7 @@
           const dateMatch = cleanDate.match(/^(\w+)\s+(\d+),\s+(\d{4}),\s+(\d{1,2}):(\d{2}):(\d{2})\s+(AM|PM)$/);
 
           if (!dateMatch) {
-            console.log("Failed to match date pattern:", cleanDate);
+            debugLog("Failed to match date pattern:", cleanDate);
             return null;
           }
 
@@ -733,7 +752,7 @@
           const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
           const month = monthNames.indexOf(monthStr.substring(0, 3)) + 1; // 1-based month
           if (month === 0) {
-            console.log("Invalid month:", monthStr);
+            debugLog("Invalid month:", monthStr);
             return null;
           }
 
@@ -767,7 +786,7 @@
 
           // Debug log for parsed dates
           if (Math.random() < 0.01) { // Log 1% of dates to avoid spam
-            console.log("parseTwitterDate:", {
+            debugLog("parseTwitterDate:", {
               input: dateStr,
               parsed: cleanDate,
               isEDT,
@@ -779,7 +798,7 @@
 
           return utcDate;
         } catch (error) {
-          console.log("Date parsing error:", error, "for:", dateStr);
+          debugLog("Date parsing error:", error, "for:", dateStr);
           return null;
         }
       }
@@ -788,7 +807,7 @@
       function parseCSV(csvText, weeksToLoad = 5) {
         const data = [];
 
-        console.log(`Processing CSV for last ${weeksToLoad} weeks...`);
+        debugLog(`Processing CSV for last ${weeksToLoad} weeks...`);
 
         // Simple approach: Find all lines ending with EDT or EST
         // This avoids multiline parsing issues
@@ -802,7 +821,7 @@
           }
         });
 
-        console.log(`Found ${tweetLines.length} tweets by EDT/EST pattern`);
+        debugLog(`Found ${tweetLines.length} tweets by EDT/EST pattern`);
 
         // Process from the end (newest tweets first) to get accurate dates
         const now = new Date();
@@ -882,11 +901,11 @@
           }
         }
 
-        console.log(`Parsed ${data.length} tweets`);
+        debugLog(`Parsed ${data.length} tweets`);
 
         // Debug: Show sample of parsed data
-        console.log("Sample parsed tweets:", data.slice(0, 5));
-        console.log("Last few parsed tweets:", data.slice(-5));
+        debugLog("Sample parsed tweets:", data.slice(0, 5));
+        debugLog("Last few parsed tweets:", data.slice(-5));
 
         // Debug: Check for today's tweets
         const today = new Date();
@@ -901,7 +920,7 @@
           }
           return false;
         });
-        console.log(`Today's tweets (${todayStr}):`, todayTweets.length, todayTweets.slice(0, 3));
+        debugLog(`Today's tweets (${todayStr}):`, todayTweets.length, todayTweets.slice(0, 3));
 
         // Debug: Count tweets for a sample date
         if (data.length > 0) {
@@ -911,7 +930,7 @@
           const sampleCount = data.filter(
             (tweet) => tweet.created_at && tweet.created_at.includes(sampleDate)
           ).length;
-          console.log(`Sample date (${sampleDate}) tweets:`, sampleCount);
+          debugLog(`Sample date (${sampleDate}) tweets:`, sampleCount);
 
           // Debug: Show date range
           const firstTweet = data[0];
@@ -922,7 +941,7 @@
             if (firstDate && lastDate) {
               const firstET = getETComponents(firstDate);
               const lastET = getETComponents(lastDate);
-              console.log("Tweet date range:", {
+              debugLog("Tweet date range:", {
                 first: `${firstET.year}-${firstET.month+1}-${firstET.day} ${firstET.hour}:${firstET.minute}`,
                 last: `${lastET.year}-${lastET.month+1}-${lastET.day} ${lastET.hour}:${lastET.minute}`,
                 totalTweets: data.length
@@ -994,7 +1013,7 @@
 
             // Debug log for first few days
             if (i < 3) {
-              console.log(`Day ${i}:`, {
+              debugLog(`Day ${i}:`, {
                 currentDate: currentDate.toString(),
                 etComponents: {
                   year: etComponents.year,
@@ -1007,15 +1026,15 @@
             }
           }
 
-          console.log("=== DATE RANGE DEBUG ===");
-          console.log("Input startDate:", startDate);
-          console.log("Input endDate:", endDate);
-          console.log("Parsed start:", actualStart);
-          console.log("Parsed end:", actualEnd);
-          console.log("Day count:", dayCount);
-          console.log("Generated days for range:", days);
+          debugLog("=== DATE RANGE DEBUG ===");
+          debugLog("Input startDate:", startDate);
+          debugLog("Input endDate:", endDate);
+          debugLog("Parsed start:", actualStart);
+          debugLog("Parsed end:", actualEnd);
+          debugLog("Day count:", dayCount);
+          debugLog("Generated days for range:", days);
           const startET = getETComponents(actualStart);
-          console.log(
+          debugLog(
             "Start date day of week:",
             startET.dayOfWeek,
             "(" + dayNames[startET.dayOfWeek] + ")"
@@ -1155,16 +1174,16 @@
         const mostActiveDay = days[mostActiveDayIndex];
 
         // Debug logging
-        console.log("=== PROCESSING SUMMARY ===");
-        console.log("Total tweets processed:", totalProcessed);
-        console.log("Valid dates parsed:", validDates);
-        console.log("Filtered out by date range:", filteredOut);
-        console.log("Filtered out by noon rule:", noonFiltered);
-        console.log("Final valid tweets:", validTweets);
+        debugLog("=== PROCESSING SUMMARY ===");
+        debugLog("Total tweets processed:", totalProcessed);
+        debugLog("Valid dates parsed:", validDates);
+        debugLog("Filtered out by date range:", filteredOut);
+        debugLog("Filtered out by noon rule:", noonFiltered);
+        debugLog("Final valid tweets:", validTweets);
         if (actualStart && actualEnd) {
           const startET = getETComponents(actualStart);
           const endET = getETComponents(actualEnd);
-          console.log("Date range:", {
+          debugLog("Date range:", {
             start: `${startET.year}-${startET.month+1}-${startET.day}`,
             end: `${endET.year}-${endET.month+1}-${endET.day}`,
             startDate: startDate,
@@ -1187,8 +1206,13 @@
 
       // Prediction functions
       function calculatePredictions(currentData, avgData) {
+        // Validate input data
         if (!currentData || !avgData)
           return { next24h: 0, endOfRange: 0, trend: "stable", pace: "-" };
+
+        // Ensure current values are non-negative
+        if (currentData.current < 0) currentData.current = 0;
+        if (avgData.current < 0) avgData.current = 0;
 
         // Calculate current pace and projection
         const now = new Date();
@@ -1223,7 +1247,7 @@
           const endDate = parseETNoonDate(endYYYYMMDD);
 
           // Timezone verification
-          console.log("Timezone check:", {
+          debugLog("Timezone check:", {
             startYYYYMMDD,
             endYYYYMMDD,
             startDate_KST: startDate.toLocaleString("ko-KR", {
@@ -1248,13 +1272,13 @@
 
           if (elapsedHours > 0 && totalHours > 0) {
             const tweetsPerHour = currentData.current / elapsedHours;
-            const remainingHours = totalHours - elapsedHours;
-            const projectedAdditional = tweetsPerHour * remainingHours;
-            const projectedTotal = Math.round(
+            const remainingHours = Math.max(0, totalHours - elapsedHours);
+            const projectedAdditional = Math.max(0, tweetsPerHour * remainingHours);
+            const projectedTotal = Math.max(currentData.current, Math.round(
               currentData.current + projectedAdditional
-            );
+            ));
 
-            console.log("Pace calculation:", {
+            debugLog("Pace calculation:", {
               current: currentData.current,
               elapsedHours: elapsedHours.toFixed(2),
               remainingHours: remainingHours.toFixed(2),
@@ -1304,9 +1328,9 @@
           // Calculate 4-week average hourly rate
           const avgHourlyRate = elapsedHours > 0 ? avgData.current / elapsedHours : 0;
 
-          // Weighted average: 70% current week, 30% 4-week average
+          // Weighted average using configuration constants
           // This balances recent performance with historical patterns
-          const weightedHourlyRate = currentHourlyRate * 0.7 + avgHourlyRate * 0.3;
+          const weightedHourlyRate = currentHourlyRate * PREDICTION_WEIGHT_CURRENT + avgHourlyRate * PREDICTION_WEIGHT_AVERAGE;
 
           // For next 24 hours, use the weighted rate
           next24hTotal = weightedHourlyRate * 24;
@@ -1341,9 +1365,9 @@
             const currentHourlyRate = currentData.current / elapsedHours;
             const avgHourlyRate = avgData.current / elapsedHours;
 
-            // Weighted average: 70% current week, 30% 4-week average
+            // Weighted average using configuration constants
             // This provides a more balanced prediction
-            const weightedHourlyRate = currentHourlyRate * 0.7 + avgHourlyRate * 0.3;
+            const weightedHourlyRate = currentHourlyRate * PREDICTION_WEIGHT_CURRENT + avgHourlyRate * PREDICTION_WEIGHT_AVERAGE;
             const predictedRemaining = weightedHourlyRate * hoursRemaining;
             weekEndTotal += predictedRemaining;
           }
@@ -1351,16 +1375,16 @@
 
         // Determine trend
         let trend = "stable";
-        if (trendFactor > 1.15)
+        if (trendFactor > TREND_UP_THRESHOLD)
           trend = "⬆️ Up " + Math.round((trendFactor - 1) * 100) + "%";
-        else if (trendFactor < 0.85)
+        else if (trendFactor < TREND_DOWN_THRESHOLD)
           trend = "⬇️ Down " + Math.round((1 - trendFactor) * 100) + "%";
         else trend = "➡️ Stable";
 
         return {
           pace: pace,
-          next24h: Math.round(next24hTotal),
-          endOfRange: Math.round(weekEndTotal),
+          next24h: Math.max(0, Math.round(next24hTotal)),
+          endOfRange: Math.max(0, Math.round(weekEndTotal)),
           trend: trend,
         };
       }
@@ -1841,7 +1865,7 @@
 
         for (let i = 0; i < methods.length; i++) {
           try {
-            console.log(`Trying method ${i + 1}...`);
+            debugLog(`Trying method ${i + 1}...`);
             const response = await methods[i]();
 
             if (!response.ok) {
@@ -1865,7 +1889,7 @@
               throw new Error("No valid tweets found");
             }
 
-            console.log(
+            debugLog(
               `Successfully loaded ${tweets.length} tweets using method ${
                 i + 1
               }`
@@ -1915,7 +1939,7 @@
 
             return; // Success, exit the function
           } catch (error) {
-            console.log(`Method ${i + 1} failed:`, error.message);
+            debugLog(`Method ${i + 1} failed:`, error.message);
             // Continue to next method
           }
         }
@@ -1923,9 +1947,20 @@
         // All methods failed
         console.error("All API methods failed");
 
-        // Reset the update indicator
+        // Determine error type for better user feedback
+        const errorMessage = error && error.message ? error.message : "Unknown error";
+        const isNetworkError = errorMessage.includes("fetch") || errorMessage.includes("network");
+        const isDataError = errorMessage.includes("Invalid CSV") || errorMessage.includes("No valid tweets");
+
+        // Reset the update indicator with specific error
         if (updateIndicator) {
-          updateIndicator.textContent = originalText + " (update failed)";
+          if (isNetworkError) {
+            updateIndicator.textContent = originalText + " (network error)";
+          } else if (isDataError) {
+            updateIndicator.textContent = originalText + " (invalid data)";
+          } else {
+            updateIndicator.textContent = originalText + " (update failed)";
+          }
           updateIndicator.style.color = "#d73a49";
         }
 
@@ -1939,10 +1974,16 @@
 
         // Only show error if no previous data exists
         if (!container.querySelector(".heatmap-table")) {
+          const userFriendlyMessage = isNetworkError
+            ? "Network connection issue. Please check your internet connection."
+            : isDataError
+            ? "Data format issue. The API response format may have changed."
+            : "Unable to fetch data from X Tracker API.";
+
           container.innerHTML = `
              <div class="error">
                <h3>Unable to load tweet data</h3>
-               <p>All methods failed including direct API calls with proper headers. The X Tracker API might have additional protection.</p>
+               <p>${userFriendlyMessage}</p>
                <div style="margin-top: 15px;">
                  <h4>Alternative Solutions:</h4>
                  <ul style="text-align: left; margin: 10px 0;">
@@ -2243,7 +2284,7 @@
         const selectedValue = select.value;
 
         if (selectedValue && rawTweets) {
-          console.log("Reprocessing data for new date range...");
+          debugLog("Reprocessing data for new date range...");
 
           const { startDate, endDate, type } = getSelectedDateRange();
           currentData = processData(rawTweets, startDate, endDate, type);
@@ -2300,7 +2341,7 @@
               return;
             }
 
-            console.log(`Loaded ${tweets.length} tweets from uploaded file`);
+            debugLog(`Loaded ${tweets.length} tweets from uploaded file`);
 
             // Populate week ranges when file is uploaded
             populateWeekRanges(tweets);
@@ -2356,7 +2397,7 @@
           // Enable auto refresh
           isAutoRefreshEnabled = true;
           autoRefreshInterval = setInterval(() => {
-            console.log("Auto refreshing data...");
+            debugLog("Auto refreshing data...");
             loadData();
           }, 60000); // 1 minute
 
@@ -2425,7 +2466,7 @@
         );
         if (isAutoRefreshEnabled) {
           autoRefreshInterval = setInterval(() => {
-            console.log("Auto refreshing data...");
+            debugLog("Auto refreshing data...");
             loadData();
           }, 60000); // 1 minute
 
