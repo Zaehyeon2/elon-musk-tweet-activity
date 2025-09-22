@@ -5,6 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Elon Musk Tweet Activity Heatmap</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'heatmap': {
+                '0': '#eef7ee',
+                '1': '#c3e6c3',
+                '2': '#7fc97f',
+                '3': '#41ab5d',
+                '4': '#238443',
+                'disabled': '#e9ecef',
+                'future': '#f6f8fa',
+                'dark-0': '#161b22',
+                'dark-1': '#0e4429',
+                'dark-2': '#006d32',
+                'dark-3': '#26a641',
+                'dark-4': '#39d353',
+                'dark-disabled': '#21262d',
+                'dark-future': '#21262d',
+              }
+            }
+          }
+        }
+      }
+    </script>
     <style>
       * {
         margin: 0;
@@ -13,699 +41,138 @@
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          sans-serif;
-        background-color: #f8f9fa;
-        padding: 20px;
-      }
-
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-      }
-
-      .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid #e1e4e8;
-        flex-wrap: wrap;
-        gap: 15px;
-      }
-
-      .title {
-        font-size: 24px;
-        font-weight: 700;
-        color: #24292e;
-      }
-
-      .controls {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .date-range {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .date-range label {
-        font-weight: 600;
-        color: #24292e;
-        font-size: 14px;
-      }
-
-      .date-input {
-        padding: 6px 12px;
-        border: 1px solid #d1d5da;
-        border-radius: 6px;
-        font-size: 14px;
-      }
-
-      .btn {
-        padding: 8px 16px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 600;
-        transition: background-color 0.2s;
-      }
-
-      .btn-primary {
-        background: #0366d6;
-        color: white;
-      }
-
-      .btn-primary:hover {
-        background: #0256cc;
-      }
-
-      .btn-secondary {
-        background: #f6f8fa;
-        color: #24292e;
-        border: 1px solid #d1d5da;
-      }
-
-      .btn-secondary:hover {
-        background: #e1e4e8;
-      }
-
-      .indicators {
-        display: flex;
-        gap: 20px;
-        align-items: center;
-      }
-
-      .indicator {
-        font-weight: 600;
-        color: #24292e;
-        font-size: 14px;
-      }
-
-      .indicator-value {
-        color: #0366d6;
-      }
-
-      .heatmap-container {
-        overflow-x: auto;
-        margin: 20px 0;
-        border: 1px solid #e1e4e8;
-        border-radius: 6px;
-        width: 100%;
-      }
-
-      .heatmap-table {
-        border-collapse: collapse;
-        margin: 0;
-        font-size: 12px;
-        width: 100%;
-        table-layout: auto;
-      }
-
-      .heatmap-table th,
-      .heatmap-table td {
-        border: 1px solid #e1e4e8;
-        text-align: center;
-        position: relative;
-      }
-
-      .hour-label {
-        background-color: #f6f8fa;
-        font-weight: 600;
-        color: #586069;
-        padding: 2px 3px;
-        text-align: center;
-        width: 32px;
-        min-width: 32px;
-        max-width: 32px;
-        font-size: 9px;
-        white-space: nowrap;
-      }
-
-      .day-header {
-        background-color: #f6f8fa;
-        font-weight: 700;
-        color: #24292e;
-        padding: 8px 4px;
-        min-width: 40px;
-        font-size: 12px;
-      }
-
-      .activity-cell {
-        min-width: 30px;
-        width: 30px;
-        height: 30px;
-        position: relative;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        padding: 0;
-      }
-
-      .activity-cell:hover {
-        z-index: 10;
-        border-color: #0366d6;
-      }
-
-      .current-time {
-        border: 3px solid #ff0000 !important;
-        box-shadow: 0 0 15px rgba(255, 0, 0, 0.8),
-          inset 0 0 20px rgba(0, 100, 200, 0.25);
-        animation: pulse 1.5s infinite;
-        z-index: 100;
-        position: relative;
-      }
-
-      .current-time::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(
-          135deg,
-          rgba(0, 150, 255, 0.1) 0%,
-          rgba(0, 100, 200, 0.15) 100%
-        );
-        pointer-events: none;
-      }
-
-      @keyframes pulse {
-        0% {
-          box-shadow: 0 0 15px rgba(255, 0, 0, 0.8),
-            inset 0 0 20px rgba(0, 100, 200, 0.25);
-          border-color: #ff0000;
-        }
-        50% {
-          box-shadow: 0 0 25px rgba(255, 0, 0, 1),
-            inset 0 0 25px rgba(0, 150, 255, 0.3);
-          border-color: #ff3333;
-        }
-        100% {
-          box-shadow: 0 0 15px rgba(255, 0, 0, 0.8),
-            inset 0 0 20px rgba(0, 100, 200, 0.25);
-          border-color: #ff0000;
-        }
-      }
-
-      .activity-value {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-weight: 600;
-        font-size: 10px;
-        color: #24292e;
-        white-space: nowrap;
-      }
-
-      /* Color intensity levels - Softer gradient */
-      .level-0 {
-        background-color: #eef7ee; /* Light green tint for 0 values */
-      }
-      .level-future {
-        background-color: #f6f8fa; /* Gray for future times */
-        border: 1px dashed #d1d5da;
-        opacity: 0.5;
-      }
-      .level-future .activity-value {
-        color: #959da5;
-        font-size: 8px;
-      }
-      .level-1 {
-        background-color: #c3e6c3; /* More visible green for 1 */
-      }
-      .level-2 {
-        background-color: #7fc97f;
-      }
-      .level-3 {
-        background-color: #41ab5d;
-      }
-      .level-4 {
-        background-color: #238443;
-      }
-      .level-5 {
-        background-color: #005a32; /* Darkest green for 10+ */
-      }
-
-      .level-disabled {
-        background-color: #e9ecef; /* Gray for disabled */
-        color: #6c757d;
-        border: 1px dashed #dee2e6;
-      }
-
-      .level-3 .activity-value,
-      .level-4 .activity-value,
-      .level-5 .activity-value {
-        color: white;
-      }
-
-      .totals-row {
-        background-color: #f6f8fa;
-        font-weight: 700;
-        color: #24292e;
-      }
-
-      .totals-cell {
-        padding: 12px;
-        text-align: center;
-        font-size: 13px;
-      }
-
-      .loading {
-        text-align: center;
-        padding: 60px 20px;
-        color: #586069;
-      }
-
-      .spinner {
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 2px solid #e1e4e8;
-        border-radius: 50%;
-        border-top-color: #0366d6;
-        animation: spin 1s ease-in-out infinite;
-        margin-right: 10px;
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      /* Mobile responsive design */
-      @media (max-width: 768px) {
-        body {
-          padding: 10px;
-        }
-
-        .container {
-          padding: 15px;
-          border-radius: 0;
-        }
-
-        .header {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 10px;
-        }
-
-        .title {
-          font-size: 20px;
-          text-align: center;
-        }
-
-        .controls {
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .date-range {
-          flex-direction: column;
-          width: 100%;
-        }
-
-        .date-range select {
-          width: 100%;
-        }
-
-        .btn {
-          width: 100%;
-          padding: 10px;
-        }
-
-        .indicators-row {
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-        }
-
-        .heatmaps-wrapper {
-          flex-direction: column;
-        }
-
-        .heatmap-section {
-          width: 100%;
-        }
-
-        .heatmap-container {
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-        }
-
-        .heatmap-table {
-          min-width: 500px;
-        }
-
-        .activity-cell {
-          width: 20px;
-          height: 20px;
-          font-size: 8px !important;
-        }
-
-        .activity-value {
-          font-size: 8px !important;
-        }
-
-        .day-header {
-          font-size: 10px;
-        }
-
-        .hour-label {
-          font-size: 10px;
-        }
-
-        .tooltip {
-          font-size: 11px;
-        }
-      }
-
-      @media (max-width: 480px) {
-        .indicators-row {
-          grid-template-columns: 1fr;
-        }
-
-        .activity-cell {
-          width: 15px;
-          height: 15px;
-        }
-
-        .heatmap-table {
-          min-width: 400px;
-        }
-      }
-
-      .progress-bar {
-        width: 200px;
-        height: 6px;
-        background: #e1e4e8;
-        border-radius: 3px;
-        margin: 20px auto;
-        overflow: hidden;
-      }
-
-      .progress-fill {
-        height: 100%;
-        background: #0366d6;
-        border-radius: 3px;
-        transition: width 0.3s ease;
-        width: 0%;
-      }
-
-      .loading-status {
-        font-size: 12px;
-        color: #586069;
-        margin-top: 10px;
-      }
-
-      .error {
-        text-align: center;
-        padding: 40px 20px;
-        color: #d73a49;
-        background-color: #ffeef0;
-        border: 1px solid #f97583;
-        border-radius: 6px;
-        margin: 20px 0;
-      }
-
-      .tooltip {
-        position: absolute;
-        background-color: #24292e;
-        color: white;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        pointer-events: none;
-        z-index: 1000;
-        white-space: nowrap;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-        opacity: 0;
-        transition: opacity 0.2s;
-      }
-
-      .tooltip.show {
-        opacity: 1;
-      }
-
-      .tooltip::after {
-        content: "";
-        position: absolute;
-        top: 100%;
-        left: 50%;
-        margin-left: -5px;
-        border-width: 5px;
-        border-style: solid;
-        border-color: #24292e transparent transparent transparent;
-        transform: translateX(-50%);
-      }
-
-      .legend {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 15px;
-        margin-top: 20px;
-        padding: 15px;
-        background-color: #f6f8fa;
-        border-radius: 6px;
-        font-size: 12px;
-        color: #586069;
-      }
-
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-      }
-
-      .legend-color {
-        width: 12px;
-        height: 12px;
-        border-radius: 2px;
-      }
-
-      .heatmaps-wrapper {
-        display: flex;
-        gap: 20px;
-        align-items: flex-start;
-        margin-top: 20px;
-        width: 100%;
-        box-sizing: border-box;
-      }
-
-      .heatmap-section {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-      }
-
-      .heatmap-title {
-        margin: 10px 0;
-        font-size: 18px;
-        font-weight: 600;
-        color: #24292e;
-      }
-
-      @media (max-width: 1024px) {
-        .heatmaps-wrapper {
-          flex-direction: column;
-          gap: 30px;
-        }
-
-        .heatmap-section {
-          width: 100%;
-        }
-      }
-
-      @media (max-width: 768px) {
-        .header {
-          flex-direction: column;
-          align-items: stretch;
-        }
-
-        .controls {
-          justify-content: space-between;
-        }
-
-        .indicators {
-          justify-content: center;
-          gap: 15px;
-          flex-wrap: wrap;
-        }
-
-        .activity-cell {
-          min-width: 22px;
-          width: 22px;
-          height: 22px;
-        }
-
-        .activity-value {
-          font-size: 8px;
-        }
-
-        .hour-label {
-          font-size: 7px;
-          padding: 1px;
-          width: 25px;
-          min-width: 25px;
-          max-width: 25px;
-        }
-
-        .day-header {
-          font-size: 10px;
-          padding: 4px 2px;
-          min-width: 28px;
-        }
-
-        .heatmap-table {
-          font-size: 10px;
-        }
-
-        .totals-cell {
-          font-size: 10px;
-          padding: 6px;
-        }
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
     </style>
   </head>
-  <body>
-    <div class="container">
-      <div class="header">
-        <h1 class="title">🐦 Elon Musk Tweet Activity</h1>
-        <div class="controls">
-          <div class="date-range">
-            <label for="weekRange">Date Range:</label>
+  <body class="bg-gray-50 dark:bg-gray-900 p-5 transition-colors duration-300">
+    <div class="container max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-5 transition-colors duration-300">
+      <div class="header flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700 flex-wrap gap-3">
+        <h1 class="title text-xl font-bold text-gray-900 dark:text-gray-100">🐦 Elon Musk Tweet Activity</h1>
+        <div class="controls flex items-center gap-2 flex-wrap">
+          <div class="date-range flex items-center gap-2">
+            <label for="weekRange" class="text-sm text-gray-600 dark:text-gray-300 font-medium">Date Range:</label>
             <select
               id="weekRange"
-              class="date-input"
+              class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium"
               onchange="updateDateRange()"
             >
               <option value="">Select a week range...</option>
             </select>
           </div>
-          <button onclick="loadData()" class="btn btn-primary">
+          <button onclick="loadData()" class="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-medium transition-colors duration-200">
             🔄 Update Now
           </button>
           <button
             onclick="toggleAutoRefresh()"
             id="autoRefreshBtn"
-            class="btn btn-secondary"
+            class="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-medium transition-colors duration-200"
           >
-            ⏰ Auto Refresh: OFF
+            ⏰ Auto Refresh: ON
           </button>
-          <button onclick="downloadCSV()" class="btn btn-secondary">
+          <button onclick="downloadCSV()" class="px-3 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-medium transition-colors duration-200">
             📥 Download Data
           </button>
+          <button onclick="toggleDarkMode()" class="px-3 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-medium transition-colors duration-200">
+            <span id="darkModeIcon">🌙</span> <span id="darkModeText">Dark Mode</span>
+          </button>
         </div>
       </div>
 
-      <div class="indicators">
-        <div class="indicator">
-          Current Week: <span id="currentValue" class="indicator-value">-</span>
+      <div class="indicators grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 my-4">
+        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+          <div class="text-gray-500 dark:text-gray-300 text-xs font-medium mb-1">Current Week</div>
+          <div id="currentValue" class="text-base font-semibold text-gray-900 dark:text-gray-100">-</div>
         </div>
-        <div class="indicator">
-          4-Week Avg: <span id="avgValue" class="indicator-value">-</span>
+        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+          <div class="text-gray-500 dark:text-gray-300 text-xs font-medium mb-1">4-Week Avg</div>
+          <div id="avgValue" class="text-base font-semibold text-gray-900 dark:text-gray-100">-</div>
         </div>
-        <div class="indicator">
-          Peak Hour: <span id="peakHour" class="indicator-value">-</span>
+        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+          <div class="text-gray-500 dark:text-gray-300 text-xs font-medium mb-1">Peak Hour</div>
+          <div id="peakHour" class="text-base font-semibold text-gray-900 dark:text-gray-100">-</div>
         </div>
-        <div class="indicator">
-          Most Active Day:
-          <span id="mostActiveDay" class="indicator-value">-</span>
+        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+          <div class="text-gray-500 dark:text-gray-300 text-xs font-medium mb-1">Most Active Day</div>
+          <div id="mostActiveDay" class="text-base font-semibold text-gray-900 dark:text-gray-100">-</div>
         </div>
-        <div class="indicator">
-          Last Updated: <span id="lastUpdated" class="indicator-value">-</span>
+        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+          <div class="text-gray-500 dark:text-gray-300 text-xs font-medium mb-1">Last Updated</div>
+          <div id="lastUpdated" class="text-base font-semibold text-gray-900 dark:text-gray-100">-</div>
         </div>
         <div
-          class="indicator"
+          class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg hidden"
           id="refreshCountdownIndicator"
-          style="display: none"
         >
-          Next Refresh:
-          <span id="refreshCountdown" class="indicator-value">-</span>
+          <div class="text-gray-500 dark:text-gray-300 text-xs font-medium mb-1">Next Refresh</div>
+          <div id="refreshCountdown" class="text-base font-semibold text-gray-900 dark:text-gray-100">-</div>
         </div>
       </div>
 
-      <div
-        class="indicators"
-        style="
-          margin-top: 10px;
-          background: #f0f8ff;
-          border: 1px solid #4a90e2;
-          border-radius: 6px;
-          padding: 10px;
-        "
-      >
-        <div class="indicator">
-          ⏱️ Current Pace:
-          <span id="currentPace" class="indicator-value">-</span>
-        </div>
-        <div class="indicator">
-          🔮 Next 24h Prediction:
-          <span id="next24hPrediction" class="indicator-value">-</span>
-        </div>
-        <div class="indicator">
-          🎯 End of Range Prediction:
-          <span id="weekEndPrediction" class="indicator-value">-</span>
-        </div>
-        <div class="indicator">
-          📊 Trend: <span id="trendIndicator" class="indicator-value">-</span>
-        </div>
-      </div>
-
-      <div class="heatmaps-wrapper">
-        <div class="heatmap-section">
-          <h3 class="heatmap-title">Current Week</h3>
-          <div id="heatmapContainer" class="heatmap-container">
-            <div class="loading">
-              <div class="spinner"></div>
-              Loading tweet data from X Tracker API...
+      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-3 mt-3">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-white dark:bg-gray-800 p-2 rounded-lg">
+            <div class="flex items-center text-gray-500 dark:text-gray-300 text-xs font-medium mb-1">
+              <span class="mr-1 text-xs">⏱️</span> Current Pace
             </div>
+            <div id="currentPace" class="text-sm font-semibold text-gray-900 dark:text-gray-100">-</div>
           </div>
-        </div>
-        <div class="heatmap-section">
-          <h3 class="heatmap-title">4-Week Average</h3>
-          <div id="averageHeatmapContainer" class="heatmap-container">
-            <div class="loading">
-              <div class="spinner"></div>
-              Calculating 4-week average...
+          <div class="bg-white dark:bg-gray-800 p-2 rounded-lg">
+            <div class="flex items-center text-gray-500 dark:text-gray-300 text-xs font-medium mb-1">
+              <span class="mr-1 text-xs">🔮</span> Next 24h
             </div>
+            <div id="next24hPrediction" class="text-sm font-semibold text-gray-900 dark:text-gray-100">-</div>
+          </div>
+          <div class="bg-white dark:bg-gray-800 p-2 rounded-lg">
+            <div class="flex items-center text-gray-500 dark:text-gray-300 text-xs font-medium mb-1">
+              <span class="mr-1 text-xs">🎯</span> End of Range
+            </div>
+            <div id="weekEndPrediction" class="text-sm font-semibold text-gray-900 dark:text-gray-100">-</div>
+          </div>
+          <div class="bg-white dark:bg-gray-800 p-2 rounded-lg">
+            <div class="flex items-center text-gray-500 dark:text-gray-300 text-xs font-medium mb-1">
+              <span class="mr-1 text-xs">📊</span> Trend
+            </div>
+            <div id="trendIndicator" class="text-sm font-semibold text-gray-900 dark:text-gray-100">-</div>
           </div>
         </div>
       </div>
 
-      <div class="legend">
-        <span>Less</span>
-        <div class="legend-item">
-          <div class="legend-color level-0"></div>
+      <div class="grid md:grid-cols-2 gap-6 mt-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Current Week</h3>
+          <div id="heatmapContainer" class="overflow-x-auto">
+            <div class="flex items-center justify-center p-8 text-gray-600 dark:text-gray-400">
+              <div class="text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
+                <div>Loading tweet data from X Tracker API...</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="legend-item">
-          <div class="legend-color level-1"></div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">4-Week Average</h3>
+          <div id="averageHeatmapContainer" class="overflow-x-auto">
+            <div class="flex items-center justify-center p-8 text-gray-600 dark:text-gray-400">
+              <div class="text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
+                <div>Calculating 4-week average...</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="legend-item">
-          <div class="legend-color level-2"></div>
+      </div>
+
+      <div class="flex items-center justify-center gap-2 mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Less</span>
+        <div class="flex gap-1">
+          <div class="w-6 h-6 rounded bg-heatmap-0 dark:bg-heatmap-dark-0 border border-gray-300 dark:border-gray-600"></div>
+          <div class="w-6 h-6 rounded bg-heatmap-1 dark:bg-heatmap-dark-1 border border-gray-300 dark:border-gray-600"></div>
+          <div class="w-6 h-6 rounded bg-heatmap-2 dark:bg-heatmap-dark-2 border border-gray-300 dark:border-gray-600"></div>
+          <div class="w-6 h-6 rounded bg-heatmap-3 dark:bg-heatmap-dark-3 border border-gray-300 dark:border-gray-600"></div>
+          <div class="w-6 h-6 rounded bg-heatmap-4 dark:bg-heatmap-dark-4 border border-gray-300 dark:border-gray-600"></div>
         </div>
-        <div class="legend-item">
-          <div class="legend-color level-3"></div>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color level-4"></div>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color level-5"></div>
-        </div>
-        <span>More</span>
+        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">More</span>
       </div>
     </div>
 
@@ -740,7 +207,7 @@
       // Create tooltip element
       function createTooltip() {
         tooltip = document.createElement("div");
-        tooltip.className = "tooltip";
+        tooltip.className = "absolute bg-gray-900 dark:bg-gray-800 text-white px-3 py-2 rounded-md text-xs pointer-events-none z-50 whitespace-nowrap shadow-xl opacity-0 transition-opacity duration-200";
         document.body.appendChild(tooltip);
       }
 
@@ -761,13 +228,15 @@
         tooltip.style.top = rect.top + scrollTop - 10 + "px";
         tooltip.style.transform = "translateX(-50%) translateY(-100%)";
 
-        tooltip.classList.add("show");
+        tooltip.classList.remove("opacity-0");
+        tooltip.classList.add("opacity-100");
       }
 
       // Hide tooltip
       function hideTooltip() {
         if (tooltip) {
-          tooltip.classList.remove("show");
+          tooltip.classList.remove("opacity-100");
+          tooltip.classList.add("opacity-0");
         }
       }
 
@@ -1098,6 +567,23 @@
         if (value <= 7) return "level-3"; // 5-7
         if (value <= 9) return "level-4"; // 8-9
         return "level-5"; // 10+
+      }
+
+      // Get Tailwind classes for heatmap cells
+      function getHeatmapTailwindClasses(value, maxValue, isDisabled, isFuture) {
+        if (isDisabled) {
+          return "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 border-dashed cursor-not-allowed";
+        }
+        if (isFuture) {
+          return "bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-600 border-dashed opacity-60";
+        }
+
+        if (value === 0) return "bg-heatmap-0 dark:bg-heatmap-dark-0";
+        if (value > 0 && value <= 2) return "bg-heatmap-1 dark:bg-heatmap-dark-1";
+        if (value <= 4) return "bg-heatmap-2 dark:bg-heatmap-dark-2";
+        if (value <= 7) return "bg-heatmap-3 dark:bg-heatmap-dark-3";
+        if (value <= 9) return "bg-heatmap-4 dark:bg-heatmap-dark-4 text-white";
+        return "bg-heatmap-4 dark:bg-heatmap-dark-4 text-white"; // 10+
       }
 
       // Format hour for display
@@ -1708,7 +1194,7 @@
 
         if (!data) {
           container.innerHTML =
-            '<div class="error">No data for 4-week average</div>';
+            '<div class="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 p-6 rounded-lg text-center">No data for 4-week average</div>';
           document.getElementById("avgValue").textContent = "-";
           return;
         }
@@ -1720,24 +1206,23 @@
         document.getElementById("avgValue").textContent =
           Math.round(current).toLocaleString();
 
-        let html = '<table class="heatmap-table">';
+        let html = '<table class="min-w-full border-collapse">';
 
         // Header row
-        html += "<tr>";
-        html += '<th class="hour-label"></th>';
+        html += '<tr class="border-b border-gray-200 dark:border-gray-700">';
+        html += '<th class="text-right pr-2 text-xs text-gray-600 dark:text-gray-400 font-medium w-12"></th>';
         days.forEach((day) => {
-          html += `<th class="day-header">${day}</th>`;
+          html += `<th class="px-1 py-2 text-xs text-gray-700 dark:text-gray-300 font-semibold text-center">${day}</th>`;
         });
         html += "</tr>";
 
         // Data rows
         hours.forEach((hour, hourIndex) => {
-          html += "<tr>";
-          html += `<td class="hour-label">${hour}</td>`;
+          html += '<tr class="border-b border-gray-100 dark:border-gray-800">';
+          html += `<td class="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-semibold px-2 py-1 text-center text-xs whitespace-nowrap">${hour}</td>`;
 
           days.forEach((day, dayIndex) => {
             let value = grid[hourIndex][dayIndex];
-            let colorLevel = getColorLevel(value, maxValue);
             let displayValue = value > 0 ? value.toFixed(1) : "0.0";
 
             // Check if this cell should be disabled (noon rule applied)
@@ -1747,14 +1232,12 @@
               if (dayIndex === 0 && hourIndex < 12) {
                 isDisabled = true;
                 displayValue = "-";
-                colorLevel = "level-disabled";
                 value = 0;
               }
               // Last day from noon onwards: disabled
               if (dayIndex === days.length - 1 && hourIndex >= 12) {
                 isDisabled = true;
                 displayValue = "-";
-                colorLevel = "level-disabled";
                 value = 0;
               }
             }
@@ -1765,32 +1248,47 @@
             const nowET = getETComponents(now);
 
             // For average heatmap: highlight ALL cells that match current day and hour
-            // This shows the historical pattern for this specific time slot
             const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
             const currentDayName = dayNames[nowET.dayOfWeek];
 
-            // Check if this cell matches current day of week and hour
-            // Highlight ALL matching time slots to show historical pattern
-            if (day === currentDayName && hourIndex === nowET.hour) {
-              // Check if this cell is not disabled
-              if (!isDisabled) {
-                isCurrentTime = true;
-              }
+            if (day === currentDayName && hourIndex === nowET.hour && !isDisabled) {
+              isCurrentTime = true;
             }
 
-            // No future time check needed for average heatmap
             let isFuture = false;
+
+            // Get Tailwind classes for the cell
+            const cellClasses = getHeatmapTailwindClasses(value, maxValue, isDisabled, isFuture);
 
             let tooltipText = `${day} ${hour}: ${value.toFixed(1)} avg tweets`;
             if (isCurrentTime) {
               tooltipText += " 🔴 CURRENT HOUR";
             }
 
-            const currentTimeClass = isCurrentTime ? "current-time" : "";
-            html += `<td class="activity-cell ${colorLevel} ${currentTimeClass}"
+            const currentTimeClass = isCurrentTime ? "ring-2 ring-red-500 ring-offset-1 dark:ring-offset-gray-900 z-10 shadow-lg animate-pulse" : "";
+
+            // Determine text color based on value and state
+            let textColor = "";
+            if (isDisabled) {
+              textColor = "text-gray-400 dark:text-gray-600";
+            } else if (isFuture) {
+              textColor = "text-gray-400 dark:text-gray-600";
+            } else if (value === 0) {
+              textColor = "text-gray-600 dark:text-gray-400";
+            } else if (value <= 2) {
+              textColor = "text-gray-700 dark:text-gray-300";
+            } else if (value <= 4) {
+              textColor = "text-gray-800 dark:text-gray-200";
+            } else if (value <= 7) {
+              textColor = "text-gray-900 dark:text-gray-100";
+            } else {
+              textColor = "text-white"; // High values always white
+            }
+
+            html += `<td class="w-8 h-8 p-0 relative cursor-pointer transition-all duration-150 hover:z-20 hover:scale-110 ${cellClasses} ${currentTimeClass}"
                         onmouseover="showTooltip(event, '${tooltipText}')"
                         onmouseout="hideTooltip()">`;
-            html += `<span class="activity-value" style="font-size: 10px;">${displayValue}</span>`;
+            html += `<span class="absolute inset-0 flex items-center justify-center text-xs font-semibold ${textColor}">${displayValue}</span>`;
             html += "</td>";
           });
 
@@ -1798,10 +1296,10 @@
         });
 
         // Totals row
-        html += '<tr class="totals-row">';
-        html += '<td class="totals-cell"><strong>AVG</strong></td>';
+        html += '<tr class="bg-gray-100 dark:bg-gray-800 font-bold">';
+        html += '<td class="p-3 text-center text-xs text-gray-700 dark:text-gray-300">AVG</td>';
         totals.forEach((total) => {
-          html += `<td class="totals-cell"><strong>${total}</strong></td>`;
+          html += `<td class="p-3 text-center text-xs text-gray-700 dark:text-gray-300">${total}</td>`;
         });
         html += "</tr>";
 
@@ -1815,7 +1313,7 @@
 
         if (!data) {
           container.innerHTML =
-            '<div class="error">Failed to process tweet data</div>';
+            '<div class="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 p-6 rounded-lg text-center">Failed to process tweet data</div>';
           return;
         }
 
@@ -1837,24 +1335,23 @@
         document.getElementById("peakHour").textContent = peakHour;
         document.getElementById("mostActiveDay").textContent = mostActiveDay;
 
-        let html = '<table class="heatmap-table">';
+        let html = '<table class="min-w-full border-collapse">';
 
         // Header row
-        html += "<tr>";
-        html += '<th class="hour-label"></th>';
+        html += '<tr class="border-b border-gray-200 dark:border-gray-700">';
+        html += '<th class="text-right pr-2 text-xs text-gray-600 dark:text-gray-400 font-medium w-12"></th>';
         days.forEach((day) => {
-          html += `<th class="day-header">${day}</th>`;
+          html += `<th class="px-1 py-2 text-xs text-gray-700 dark:text-gray-300 font-semibold text-center">${day}</th>`;
         });
         html += "</tr>";
 
         // Data rows
         hours.forEach((hour, hourIndex) => {
-          html += "<tr>";
-          html += `<td class="hour-label">${hour}</td>`;
+          html += '<tr class="border-b border-gray-100 dark:border-gray-800">';
+          html += `<td class="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-semibold px-2 py-1 text-center text-xs whitespace-nowrap">${hour}</td>`;
 
           days.forEach((day, dayIndex) => {
             let value = grid[hourIndex][dayIndex];
-            let colorLevel = getColorLevel(value, maxValue);
             let displayValue = value >= 0 ? value : ""; // Show 0 instead of empty
 
             // Check if this cell should be disabled (noon rule applied)
@@ -1864,14 +1361,12 @@
               if (dayIndex === 0 && hourIndex < 12) {
                 isDisabled = true;
                 displayValue = "-";
-                colorLevel = "level-disabled";
                 value = 0; // Set value to 0 for disabled cells
               }
               // Last day from noon onwards: disabled
               if (dayIndex === days.length - 1 && hourIndex >= 12) {
                 isDisabled = true;
                 displayValue = "-";
-                colorLevel = "level-disabled";
                 value = 0; // Set value to 0 for disabled cells
               }
             }
@@ -1883,7 +1378,6 @@
             const nowET = getETComponents(now);
 
             // For current week heatmap: highlight ALL cells that match current day and hour
-            // This shows the historical pattern for this specific time slot
             const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
             const currentDayName = dayNames[nowET.dayOfWeek];
 
@@ -1933,8 +1427,10 @@
             // Apply future style if needed
             if (isFuture && !isDisabled) {
               displayValue = ""; // Empty for future
-              colorLevel = "level-future";
             }
+
+            // Get Tailwind classes for the cell
+            const cellClasses = getHeatmapTailwindClasses(value, maxValue, isDisabled, isFuture);
 
             // Create tooltip with actual date if available
             let tooltipText = `${day} ${hour}: ${value} tweets`;
@@ -1967,11 +1463,30 @@
               }
             }
 
-            const currentTimeClass = isCurrentTime ? "current-time" : "";
-            html += `<td class="activity-cell ${colorLevel} ${currentTimeClass}"
+            const currentTimeClass = isCurrentTime ? "ring-2 ring-red-500 ring-offset-1 dark:ring-offset-gray-900 z-10 shadow-lg animate-pulse" : "";
+
+            // Determine text color based on value and state
+            let textColor = "";
+            if (isDisabled) {
+              textColor = "text-gray-400 dark:text-gray-600";
+            } else if (isFuture) {
+              textColor = "text-gray-400 dark:text-gray-600";
+            } else if (value === 0) {
+              textColor = "text-gray-600 dark:text-gray-400";
+            } else if (value <= 2) {
+              textColor = "text-gray-700 dark:text-gray-300";
+            } else if (value <= 4) {
+              textColor = "text-gray-800 dark:text-gray-200";
+            } else if (value <= 7) {
+              textColor = "text-gray-900 dark:text-gray-100";
+            } else {
+              textColor = "text-white"; // High values always white
+            }
+
+            html += `<td class="w-8 h-8 p-0 relative cursor-pointer transition-all duration-150 hover:z-20 hover:scale-110 ${cellClasses} ${currentTimeClass}"
                         onmouseover="showTooltip(event, '${tooltipText}')"
                         onmouseout="hideTooltip()">`;
-            html += `<span class="activity-value">${displayValue}</span>`;
+            html += `<span class="absolute inset-0 flex items-center justify-center text-xs font-semibold ${textColor}">${displayValue}</span>`;
             html += "</td>";
           });
 
@@ -1979,10 +1494,10 @@
         });
 
         // Totals row
-        html += '<tr class="totals-row">';
-        html += '<td class="totals-cell"><strong>TOTALS</strong></td>';
+        html += '<tr class="bg-gray-100 dark:bg-gray-800 font-bold">';
+        html += '<td class="p-3 text-center text-xs text-gray-700 dark:text-gray-300">TOTALS</td>';
         totals.forEach((total) => {
-          html += `<td class="totals-cell"><strong>${total}</strong></td>`;
+          html += `<td class="p-3 text-center text-xs text-gray-700 dark:text-gray-300">${total}</td>`;
         });
         html += "</tr>";
 
@@ -2006,21 +1521,21 @@
 
         // Disable the update button
         const updateBtn = document.querySelector(
-          '.btn-primary[onclick="loadData()"]'
+          'button[onclick="loadData()"]'
         );
         if (updateBtn) {
           updateBtn.disabled = true;
           updateBtn.textContent = "🔄 Updating...";
-          updateBtn.style.opacity = "0.6";
-          updateBtn.style.cursor = "not-allowed";
+          updateBtn.classList.add("opacity-60", "cursor-not-allowed");
         }
 
         // Show loading progress
         const updateIndicator = document.getElementById("lastUpdated");
         const originalText = updateIndicator ? updateIndicator.textContent : "";
         if (updateIndicator) {
-          updateIndicator.innerHTML = `<span class="spinner"></span>Fetching data...`;
-          updateIndicator.style.color = "#0366d6";
+          updateIndicator.innerHTML = `<span class="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 dark:border-blue-300 mr-2"></span>Fetching data...`;
+          updateIndicator.classList.remove("text-gray-900", "dark:text-gray-100"); // Remove default colors
+          updateIndicator.classList.add("text-blue-600", "dark:text-blue-300");
         }
 
         // Try corsproxy.io only
@@ -2102,15 +1617,15 @@
 
             // Reset the update indicator color
             if (updateIndicator) {
-              updateIndicator.style.color = "";
+              updateIndicator.classList.remove("text-blue-600", "dark:text-blue-300");
+              updateIndicator.classList.add("text-gray-900", "dark:text-gray-100");
             }
 
             // Re-enable the update button
             if (updateBtn) {
               updateBtn.disabled = false;
               updateBtn.textContent = "🔄 Update Now";
-              updateBtn.style.opacity = "";
-              updateBtn.style.cursor = "";
+              updateBtn.classList.remove("opacity-60", "cursor-not-allowed");
             }
 
             // Reset loading flag
@@ -2139,15 +1654,15 @@
           } else {
             updateIndicator.textContent = originalText + " (update failed)";
           }
-          updateIndicator.style.color = "#d73a49";
+          updateIndicator.classList.remove("text-blue-600", "dark:text-blue-300");
+          updateIndicator.classList.add("text-red-600", "dark:text-red-400");
         }
 
         // Re-enable the update button
         if (updateBtn) {
           updateBtn.disabled = false;
           updateBtn.textContent = "🔄 Update Now";
-          updateBtn.style.opacity = "";
-          updateBtn.style.cursor = "";
+          updateBtn.classList.remove("opacity-60", "cursor-not-allowed");
         }
 
         // Reset loading flag
@@ -2162,23 +1677,23 @@
             : "Unable to fetch data from X Tracker API.";
 
           container.innerHTML = `
-             <div class="error">
-               <h3>Unable to load tweet data</h3>
-               <p>${userFriendlyMessage}</p>
-               <div style="margin-top: 15px;">
-                 <h4>Alternative Solutions:</h4>
-                 <ul style="text-align: left; margin: 10px 0;">
+             <div class="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg p-6">
+               <h3 class="text-lg font-semibold text-red-700 dark:text-red-400 mb-2">Unable to load tweet data</h3>
+               <p class="text-red-600 dark:text-red-500 mb-4">${userFriendlyMessage}</p>
+               <div class="mt-4">
+                 <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Alternative Solutions:</h4>
+                 <ul class="text-left space-y-2 mb-4 text-gray-600 dark:text-gray-400">
                    <li>🔄 Wait a few minutes and retry (API might be temporarily down)</li>
-                   <li>📁 Upload a CSV file downloaded from <a href="https://www.xtracker.io/api/download" target="_blank">X Tracker</a></li>
+                   <li>📁 Upload a CSV file downloaded from <a href="https://www.xtracker.io/api/download" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">X Tracker</a></li>
                    <li>🔧 Install a CORS browser extension like "CORS Unblock" or "CORS Everywhere"</li>
-                   <li>🔗 Open <a href="https://www.xtracker.io/api/download" target="_blank">this link</a>, save as CSV, then upload</li>
+                   <li>🔗 Open <a href="https://www.xtracker.io/api/download" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">this link</a>, save as CSV, then upload</li>
                  </ul>
-                 <div style="margin: 15px 0;">
-                   <label for="csvFileInput" style="font-weight: 600; margin-bottom: 5px; display: block;">Upload CSV File:</label>
-                   <input type="file" id="csvFileInput" accept=".csv" style="margin: 5px 0; padding: 5px;" onchange="handleFileUpload(event)">
+                 <div class="my-4">
+                   <label for="csvFileInput" class="block font-semibold text-gray-700 dark:text-gray-300 mb-2">Upload CSV File:</label>
+                   <input type="file" id="csvFileInput" accept=".csv" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300" onchange="handleFileUpload(event)">
                  </div>
-                 <div style="margin: 10px 0;">
-                   <button onclick="loadData()" class="btn btn-primary">🔄 Retry API</button>
+                 <div class="mt-4">
+                   <button onclick="loadData()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-semibold transition-colors duration-200">🔄 Retry API</button>
                  </div>
                </div>
              </div>
@@ -2572,8 +2087,8 @@
             countdownInterval = null;
           }
           btn.textContent = "⏰ Auto Refresh: OFF";
-          btn.className = "btn btn-secondary";
-          countdownIndicator.style.display = "none";
+          btn.className = "px-3 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md font-medium transition-colors duration-200";
+          countdownIndicator.classList.add("hidden");
         } else {
           // Enable auto refresh
           isAutoRefreshEnabled = true;
@@ -2587,8 +2102,8 @@
           }, AUTO_REFRESH_INTERVAL);
 
           btn.textContent = "⏰ Auto Refresh: ON";
-          btn.className = "btn btn-primary";
-          countdownIndicator.style.display = "block";
+          btn.className = "px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-medium transition-colors duration-200";
+          countdownIndicator.classList.remove("hidden");
           startRefreshCountdown();
         }
       }
@@ -2639,8 +2154,41 @@
         }
       }
 
+      // Dark mode toggle for Tailwind
+      function toggleDarkMode() {
+        const html = document.documentElement;
+        const isDark = html.classList.contains('dark');
+
+        if (isDark) {
+          html.classList.remove('dark');
+          localStorage.setItem('theme', 'light');
+          document.getElementById('darkModeIcon').textContent = '🌙';
+          document.getElementById('darkModeText').textContent = 'Dark Mode';
+        } else {
+          html.classList.add('dark');
+          localStorage.setItem('theme', 'dark');
+          document.getElementById('darkModeIcon').textContent = '☀️';
+          document.getElementById('darkModeText').textContent = 'Light Mode';
+        }
+      }
+
+      // Initialize theme
+      function initTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+          document.documentElement.classList.add('dark');
+          document.getElementById('darkModeIcon').textContent = '☀️';
+          document.getElementById('darkModeText').textContent = 'Light Mode';
+        }
+      }
+
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
+        // Initialize theme
+        initTheme();
+
         // Initialize with empty week ranges - will be populated when data loads
         populateWeekRanges();
 
@@ -2660,8 +2208,8 @@
           }, AUTO_REFRESH_INTERVAL);
 
           btn.textContent = "⏰ Auto Refresh: ON";
-          btn.className = "btn btn-primary";
-          countdownIndicator.style.display = "block";
+          btn.className = "px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-medium transition-colors duration-200";
+          countdownIndicator.classList.remove("hidden");
         }
 
         // Load data from API
