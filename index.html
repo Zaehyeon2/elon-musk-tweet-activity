@@ -305,6 +305,130 @@
         }
       }
 
+      /* Mobile responsive design */
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+        }
+
+        .container {
+          padding: 15px;
+          border-radius: 0;
+        }
+
+        .header {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 10px;
+        }
+
+        .title {
+          font-size: 20px;
+          text-align: center;
+        }
+
+        .controls {
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .date-range {
+          flex-direction: column;
+          width: 100%;
+        }
+
+        .date-range select {
+          width: 100%;
+        }
+
+        .btn {
+          width: 100%;
+          padding: 10px;
+        }
+
+        .indicators-row {
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        .heatmaps-wrapper {
+          flex-direction: column;
+        }
+
+        .heatmap-section {
+          width: 100%;
+        }
+
+        .heatmap-container {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .heatmap-table {
+          min-width: 500px;
+        }
+
+        .activity-cell {
+          width: 20px;
+          height: 20px;
+          font-size: 8px !important;
+        }
+
+        .activity-value {
+          font-size: 8px !important;
+        }
+
+        .day-header {
+          font-size: 10px;
+        }
+
+        .hour-label {
+          font-size: 10px;
+        }
+
+        .tooltip {
+          font-size: 11px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .indicators-row {
+          grid-template-columns: 1fr;
+        }
+
+        .activity-cell {
+          width: 15px;
+          height: 15px;
+        }
+
+        .heatmap-table {
+          min-width: 400px;
+        }
+      }
+
+      .progress-bar {
+        width: 200px;
+        height: 6px;
+        background: #e1e4e8;
+        border-radius: 3px;
+        margin: 20px auto;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: #0366d6;
+        border-radius: 3px;
+        transition: width 0.3s ease;
+        width: 0%;
+      }
+
+      .loading-status {
+        font-size: 12px;
+        color: #586069;
+        margin-top: 10px;
+      }
+
       .error {
         text-align: center;
         padding: 40px 20px;
@@ -1309,9 +1433,33 @@
           }
         }
 
-        // Calculate trend factor (current week vs average)
+        // Calculate trend factor (current week vs average for same elapsed time)
+        // For trend, we need to compare only the same elapsed period
+        let comparableAvgTotal = 0;
+        if (elapsedHours > 0 && avgData) {
+          // Calculate how many days and hours have elapsed
+          const elapsedDays = Math.floor(elapsedHours / 24);
+          const elapsedHoursInDay = Math.floor(elapsedHours % 24);
+
+          // Sum up avgData.grid for the same elapsed period
+          for (let d = 0; d <= Math.min(elapsedDays, 7); d++) {
+            for (let h = 0; h < 24; h++) {
+              // Skip if this time hasn't elapsed yet
+              if (d > elapsedDays || (d === elapsedDays && h > elapsedHoursInDay)) continue;
+
+              // Apply noon rules
+              if (d === 0 && h < 12) continue; // First day before noon
+              if (d === 7 && h >= 12) continue; // Last day from noon
+
+              if (avgData.grid[h] && avgData.grid[h][d]) {
+                comparableAvgTotal += avgData.grid[h][d];
+              }
+            }
+          }
+        }
+
         const trendFactor =
-          avgData.current > 0 ? currentData.current / avgData.current : 1;
+          comparableAvgTotal > 0 ? currentData.current / comparableAvgTotal : 1;
 
         // Next 24 hours prediction
         const nowETComponents = getETComponents(now);
@@ -1336,8 +1484,8 @@
           // Calculate current week's hourly rate
           const currentHourlyRate = elapsedHours > 0 ? currentData.current / elapsedHours : 0;
 
-          // Calculate 4-week average hourly rate
-          const avgHourlyRate = elapsedHours > 0 ? avgData.current / elapsedHours : 0;
+          // Calculate 4-week average hourly rate based on comparable period
+          const avgHourlyRate = elapsedHours > 0 ? comparableAvgTotal / elapsedHours : 0;
 
           // Weighted average using configuration constants
           // This balances recent performance with historical patterns
@@ -1374,7 +1522,7 @@
           if (hoursRemaining > 0 && elapsedHours > 0) {
             // Calculate both current and average hourly rates
             const currentHourlyRate = currentData.current / elapsedHours;
-            const avgHourlyRate = avgData.current / elapsedHours;
+            const avgHourlyRate = comparableAvgTotal / elapsedHours;
 
             // Weighted average using configuration constants
             // This provides a more balanced prediction
@@ -1465,14 +1613,14 @@
         const weekStartNoonCache = new Map();
 
         // Process each of the 4 previous weeks
-        // Only count the same time period as we've progressed in current week
+        // Collect FULL week data for pattern analysis
         for (let week = 1; week <= WEEKS_FOR_TREND; week++) {
           const weekStart = new Date(currentWeekStart);
           weekStart.setTime(weekStart.getTime() - (week * 7 * 24 * 60 * 60 * 1000));
 
-          // For fair comparison, only look at the same elapsed time in previous weeks
+          // Get full 8-day period for complete pattern
           const weekEnd = new Date(weekStart);
-          weekEnd.setTime(weekEnd.getTime() + hoursIntoCurrentWeek * 60 * 60 * 1000);
+          weekEnd.setTime(weekEnd.getTime() + (8 * 24 * 60 * 60 * 1000));
 
           // Pre-calculate week start noon date once for this week
           const weekStartET = getETComponents(weekStart);
@@ -1842,8 +1990,18 @@
         container.innerHTML = html;
       }
 
+      // Track if data is currently loading
+      let isLoadingData = false;
+
       // Load data from X Tracker API
       async function loadData() {
+        // Skip if already loading
+        if (isLoadingData) {
+          debugLog("Skipping loadData - already loading");
+          return;
+        }
+
+        isLoadingData = true;
         const container = document.getElementById("heatmapContainer");
 
         // Disable the update button
@@ -1857,12 +2015,11 @@
           updateBtn.style.cursor = "not-allowed";
         }
 
-        // Don't clear the container - keep showing previous data
-        // Optional: Add a subtle loading indicator
+        // Show loading progress
         const updateIndicator = document.getElementById("lastUpdated");
         const originalText = updateIndicator ? updateIndicator.textContent : "";
         if (updateIndicator) {
-          updateIndicator.textContent = "Updating...";
+          updateIndicator.innerHTML = `<span class="spinner"></span>Fetching data...`;
           updateIndicator.style.color = "#0366d6";
         }
 
@@ -1956,6 +2113,8 @@
               updateBtn.style.cursor = "";
             }
 
+            // Reset loading flag
+            isLoadingData = false;
             return; // Success, exit the function
           } catch (error) {
             debugLog(`Method ${i + 1} failed:`, error.message);
@@ -1990,6 +2149,9 @@
           updateBtn.style.opacity = "";
           updateBtn.style.cursor = "";
         }
+
+        // Reset loading flag
+        isLoadingData = false;
 
         // Only show error if no previous data exists
         if (!container.querySelector(".heatmap-table")) {
@@ -2416,9 +2578,13 @@
           // Enable auto refresh
           isAutoRefreshEnabled = true;
           autoRefreshInterval = setInterval(() => {
-            debugLog("Auto refreshing data...");
-            loadData();
-          }, 60000); // 1 minute
+            if (!isLoadingData) {
+              debugLog("Auto refreshing data...");
+              loadData();
+            } else {
+              debugLog("Skipping auto refresh - already loading");
+            }
+          }, AUTO_REFRESH_INTERVAL);
 
           btn.textContent = "⏰ Auto Refresh: ON";
           btn.className = "btn btn-primary";
@@ -2485,9 +2651,13 @@
         );
         if (isAutoRefreshEnabled) {
           autoRefreshInterval = setInterval(() => {
-            debugLog("Auto refreshing data...");
-            loadData();
-          }, 60000); // 1 minute
+            if (!isLoadingData) {
+              debugLog("Auto refreshing data...");
+              loadData();
+            } else {
+              debugLog("Skipping auto refresh - already loading");
+            }
+          }, AUTO_REFRESH_INTERVAL);
 
           btn.textContent = "⏰ Auto Refresh: ON";
           btn.className = "btn btn-primary";
