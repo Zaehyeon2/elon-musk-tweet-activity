@@ -1298,20 +1298,18 @@
             (now - startDate) / (1000 * 60 * 60 * 24)
           );
 
-          for (let i = 0; i < 24; i++) {
-            const futureHour = (nowETComponents.hour + i) % 24;
-            const futureDayOffset = Math.floor((nowETComponents.hour + i) / 24);
-            const futureDayIndex = (daysSinceStart + futureDayOffset) % 8; // Use 8-day cycle
+          // Calculate current week's hourly rate
+          const currentHourlyRate = elapsedHours > 0 ? currentData.current / elapsedHours : 0;
 
-            if (
-              avgData.grid[futureHour] &&
-              avgData.grid[futureHour][futureDayIndex]
-            ) {
-              // Apply trend factor to average
-              next24hTotal +=
-                avgData.grid[futureHour][futureDayIndex] * trendFactor;
-            }
-          }
+          // Calculate 4-week average hourly rate
+          const avgHourlyRate = elapsedHours > 0 ? avgData.current / elapsedHours : 0;
+
+          // Weighted average: 70% current week, 30% 4-week average
+          // This balances recent performance with historical patterns
+          const weightedHourlyRate = currentHourlyRate * 0.7 + avgHourlyRate * 0.3;
+
+          // For next 24 hours, use the weighted rate
+          next24hTotal = weightedHourlyRate * 24;
         }
 
         // End of range prediction - calculate remaining hours until range ends
@@ -1339,11 +1337,14 @@
           );
 
           if (hoursRemaining > 0 && elapsedHours > 0) {
-            // Use average rate with trend factor applied
-            const avgHourlyRate = avgData.current / totalHours;
-            // Apply trend factor to average rate for prediction
-            const predictedRemaining =
-              avgHourlyRate * trendFactor * hoursRemaining;
+            // Calculate both current and average hourly rates
+            const currentHourlyRate = currentData.current / elapsedHours;
+            const avgHourlyRate = avgData.current / elapsedHours;
+
+            // Weighted average: 70% current week, 30% 4-week average
+            // This provides a more balanced prediction
+            const weightedHourlyRate = currentHourlyRate * 0.7 + avgHourlyRate * 0.3;
+            const predictedRemaining = weightedHourlyRate * hoursRemaining;
             weekEndTotal += predictedRemaining;
           }
         }
