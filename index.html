@@ -1419,12 +1419,21 @@
           currentWeekStart = parseETNoonDate(weekDateStr);
         }
 
+        // Calculate how far we are into the current week
+        const now = new Date();
+        const hoursIntoCurrentWeek = (now - currentWeekStart) / (1000 * 60 * 60);
+        const maxHours = 8 * 24; // Full week is 8 days = 192 hours
+        const progressRatio = Math.min(hoursIntoCurrentWeek / maxHours, 1);
+
         // Process each of the 4 previous weeks
+        // Only count the same time period as we've progressed in current week
         for (let week = 1; week <= 4; week++) {
           const weekStart = new Date(currentWeekStart);
           weekStart.setTime(weekStart.getTime() - (week * 7 * 24 * 60 * 60 * 1000));
+
+          // For fair comparison, only look at the same elapsed time in previous weeks
           const weekEnd = new Date(weekStart);
-          weekEnd.setTime(weekEnd.getTime() + (8 * 24 * 60 * 60 * 1000)); // 8 days to include the last day
+          weekEnd.setTime(weekEnd.getTime() + hoursIntoCurrentWeek * 60 * 60 * 1000);
 
           tweets.forEach((tweet) => {
             const date = parseTwitterDate(tweet.created_at);
@@ -1437,16 +1446,14 @@
               const weekStartET = getETComponents(weekStart);
               const weekStartDateStr = `${weekStartET.year}-${String(weekStartET.month + 1).padStart(2, '0')}-${String(weekStartET.day).padStart(2, '0')}`;
 
-              // Create dates at ET midnight for accurate day difference
-              const tweetDayStart = parseETNoonDate(tweetDateStr);
-              const weekStartDayStart = parseETNoonDate(weekStartDateStr);
+              // Use noon dates directly for day difference calculation
+              // This avoids DST issues that could occur when adjusting times
+              const tweetDayNoon = parseETNoonDate(tweetDateStr);
+              const weekStartDayNoon = parseETNoonDate(weekStartDateStr);
 
-              // Adjust to midnight by subtracting 12 hours from noon
-              tweetDayStart.setTime(tweetDayStart.getTime() - (12 * 60 * 60 * 1000));
-              weekStartDayStart.setTime(weekStartDayStart.getTime() - (12 * 60 * 60 * 1000));
-
-              const daysDiff = Math.floor(
-                (tweetDayStart - weekStartDayStart) / (1000 * 60 * 60 * 24)
+              // Calculate days difference using noon times (more reliable across DST)
+              const daysDiff = Math.round(
+                (tweetDayNoon - weekStartDayNoon) / (1000 * 60 * 60 * 24)
               );
 
               if (daysDiff >= 0 && daysDiff <= 7) {
@@ -1462,7 +1469,8 @@
           });
         }
 
-        // Calculate averages
+        // Calculate averages - still show full week pattern
+        // but the data is based on comparable time periods
         const avgGrid = totals.map((hourRow, hourIndex) =>
           hourRow.map((total, dayIndex) => {
             // Divide by 4 to get weekly average
