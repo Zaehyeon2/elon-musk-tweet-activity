@@ -734,11 +734,25 @@
         return `${hour - 12} PM`;
       }
 
+      // Helper function to create colgroup for consistent column widths
+      function createColgroup(columnCount) {
+        let html = '<colgroup>';
+        // First column for hour labels (fixed width)
+        html += '<col style="width: 60px;">';
+        // Data columns (equal width)
+        const dataColWidth = `${100 / (columnCount + 1)}%`;
+        for (let i = 0; i < columnCount; i++) {
+          html += `<col style="width: ${dataColWidth};">`;
+        }
+        html += '</colgroup>';
+        return html;
+      }
+
       // Helper function to create heatmap table header
       function createHeatmapHeader(days) {
         let html = '<tr class="border-b border-gray-200 dark:border-gray-700">';
         html +=
-          '<th class="text-right pr-2 text-xs text-gray-600 dark:text-gray-400 font-medium w-12"></th>';
+          '<th class="text-right pr-2 text-xs text-gray-600 dark:text-gray-400 font-medium"></th>';
         days.forEach((day) => {
           html += `<th class="px-1 py-1 text-xs text-gray-700 dark:text-gray-300 font-semibold text-center border-l border-gray-200 dark:border-gray-700">${day}</th>`;
         });
@@ -1466,7 +1480,8 @@
         document.getElementById("avgValue").textContent =
           Math.round(current).toLocaleString();
 
-        let html = '<table class="w-full table-auto border-collapse">';
+        let html = '<table class="w-full table-fixed border-collapse">';
+        html += createColgroup(days.length);
         html += createHeatmapHeader(days);
 
         // Data rows
@@ -1590,7 +1605,8 @@
         document.getElementById("peakHour").textContent = peakHour;
         document.getElementById("mostActiveDay").textContent = mostActiveDay;
 
-        let html = '<table class="w-full table-auto border-collapse">';
+        let html = '<table class="w-full table-fixed border-collapse">';
+        html += createColgroup(days.length);
         html += createHeatmapHeader(days);
 
         // Data rows
