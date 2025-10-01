@@ -1384,26 +1384,31 @@
         // For trend, we need to compare only the same elapsed period
         let comparableAvgTotal = 0;
         if (elapsedHours > 0 && avgData) {
-          // Calculate how many days and hours have elapsed
-          const elapsedDays = Math.floor(elapsedHours / 24);
-          const elapsedHoursInDay = Math.floor(elapsedHours % 24);
-
-          // Sum up avgData.grid for the same elapsed period
-          for (let d = 0; d <= Math.min(elapsedDays, 7); d++) {
+          // Sum avgData.grid for the same elapsed period
+          // Week starts at day 0, hour 12 (noon of first day)
+          for (let d = 0; d < 8; d++) {
             for (let h = 0; h < 24; h++) {
-              // Skip if this time hasn't elapsed yet
-              if (
-                d > elapsedDays ||
-                (d === elapsedDays && h > elapsedHoursInDay)
-              )
-                continue;
+              // Calculate absolute hours from start (first day noon = hour 0)
+              let absoluteHourFromStart;
 
-              // Apply noon rules
-              if (d === 0 && h < 12) continue; // First day before noon
-              if (d === 7 && h >= 12) continue; // Last day from noon
+              if (d === 0) {
+                // First day: starts at noon (12PM)
+                if (h < 12) continue; // Before noon, not in range
+                absoluteHourFromStart = h - 12; // 12PM = 0, 1PM = 1, etc.
+              } else if (d === 7) {
+                // Last day: ends at noon (12PM)
+                if (h >= 12) continue; // After noon, not in range
+                absoluteHourFromStart = (d * 24) - 12 + h; // Continue counting
+              } else {
+                // Middle days: full 24 hours
+                absoluteHourFromStart = (d * 24) - 12 + h;
+              }
 
-              if (avgData.grid[h] && avgData.grid[h][d]) {
-                comparableAvgTotal += avgData.grid[h][d];
+              // Only include if this time has elapsed
+              if (absoluteHourFromStart < elapsedHours) {
+                if (avgData.grid[h] && avgData.grid[h][d] !== undefined) {
+                  comparableAvgTotal += avgData.grid[h][d];
+                }
               }
             }
           }
