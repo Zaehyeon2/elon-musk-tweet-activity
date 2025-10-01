@@ -323,12 +323,34 @@ export function updateDateRange() {
     // Recalculate predictions
     const predictions = calculatePredictions(state.currentData, avgData);
     document.getElementById("currentPace").textContent = predictions.pace;
-    document.getElementById("next24hPrediction").textContent =
-      predictions.next24h.toLocaleString() + " tweets";
-    document.getElementById("weekEndPrediction").textContent =
-      predictions.endOfRange.toLocaleString() + " tweets";
-    document.getElementById("trendIndicator").textContent =
-      predictions.trend;
+
+    // Next 24h with confidence interval
+    const next24hEl = document.getElementById("next24hPrediction");
+    if (predictions.next24hMin !== undefined && predictions.next24hMax !== undefined) {
+      next24hEl.textContent = `${predictions.next24h.toLocaleString()} (${predictions.next24hMin}-${predictions.next24hMax})`;
+    } else {
+      next24hEl.textContent = predictions.next24h.toLocaleString();
+    }
+
+    // End of range with confidence interval
+    const endOfRangeEl = document.getElementById("weekEndPrediction");
+    if (predictions.endOfRangeMin !== undefined && predictions.endOfRangeMax !== undefined) {
+      endOfRangeEl.textContent = `${predictions.endOfRange.toLocaleString()} (${predictions.endOfRangeMin.toLocaleString()}-${predictions.endOfRangeMax.toLocaleString()})`;
+    } else {
+      endOfRangeEl.textContent = predictions.endOfRange.toLocaleString();
+    }
+
+    // Trend only (momentum is already factored into predictions)
+    document.getElementById("trendIndicator").textContent = predictions.trend;
+
+    // Momentum - show as multiplier (e.g., "1.23x")
+    const momentumEl = document.getElementById("momentumIndicator");
+    if (predictions.momentum !== undefined) {
+      const momentumValue = predictions.momentum.toFixed(2) + "x";
+      momentumEl.textContent = momentumValue;
+    } else {
+      momentumEl.textContent = "-";
+    }
   } else if (selectedValue) {
     // If no raw data available, load from API
     loadData();
@@ -392,14 +414,34 @@ export function handleFileUpload(event) {
 
       // Calculate and display predictions
       const predictions = calculatePredictions(state.currentData, avgData);
-      document.getElementById("currentPace").textContent =
-        predictions.pace;
-      document.getElementById("next24hPrediction").textContent =
-        predictions.next24h.toLocaleString() + " tweets";
-      document.getElementById("weekEndPrediction").textContent =
-        predictions.endOfRange.toLocaleString() + " tweets";
-      document.getElementById("trendIndicator").textContent =
-        predictions.trend;
+      document.getElementById("currentPace").textContent = predictions.pace;
+
+      // Next 24h with confidence interval
+      const next24hEl = document.getElementById("next24hPrediction");
+      if (predictions.next24hMin !== undefined && predictions.next24hMax !== undefined) {
+        next24hEl.textContent = `${predictions.next24h.toLocaleString()} (${predictions.next24hMin}-${predictions.next24hMax})`;
+      } else {
+        next24hEl.textContent = predictions.next24h.toLocaleString();
+      }
+
+      // End of range with confidence interval
+      const endOfRangeEl = document.getElementById("weekEndPrediction");
+      if (predictions.endOfRangeMin !== undefined && predictions.endOfRangeMax !== undefined) {
+        endOfRangeEl.textContent = `${predictions.endOfRange.toLocaleString()} (${predictions.endOfRangeMin.toLocaleString()}-${predictions.endOfRangeMax.toLocaleString()})`;
+      } else {
+        endOfRangeEl.textContent = predictions.endOfRange.toLocaleString();
+      }
+
+      // Trend
+      document.getElementById("trendIndicator").textContent = predictions.trend;
+
+      // Momentum
+      const momentumEl = document.getElementById("momentumIndicator");
+      if (predictions.momentum !== undefined) {
+        momentumEl.textContent = predictions.momentum.toFixed(2) + "x";
+      } else {
+        momentumEl.textContent = "-";
+      }
     } catch (error) {
       alert("Error parsing CSV file: " + error.message);
     }
@@ -549,7 +591,7 @@ export function updateLastRefreshTime() {
       minute: "2-digit",
       second: "2-digit",
     });
-    lastUpdatedElement.textContent = timeString;
+    lastUpdatedElement.innerHTML = `<span class="text-gray-900 dark:text-gray-100">${timeString}</span>`;
   }
 }
 

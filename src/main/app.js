@@ -99,11 +99,34 @@ async function loadDataInternal(forceRefresh = false) {
 
       const predictions = calculatePredictions(currentData, avgData);
       UI.updateIndicator("currentPace", predictions.pace);
-      UI.updateIndicator("next24hPrediction", predictions.next24h.toLocaleString() + " tweets");
-      UI.updateIndicator("weekEndPrediction", predictions.endOfRange.toLocaleString() + " tweets");
+
+      // Next 24h with confidence interval
+      const next24hEl = document.getElementById("next24hPrediction");
+      if (predictions.next24hMin !== undefined && predictions.next24hMax !== undefined) {
+        next24hEl.textContent = `${predictions.next24h.toLocaleString()} (${predictions.next24hMin}-${predictions.next24hMax})`;
+      } else {
+        next24hEl.textContent = predictions.next24h.toLocaleString();
+      }
+
+      // End of range with confidence interval
+      const endOfRangeEl = document.getElementById("weekEndPrediction");
+      if (predictions.endOfRangeMin !== undefined && predictions.endOfRangeMax !== undefined) {
+        endOfRangeEl.textContent = `${predictions.endOfRange.toLocaleString()} (${predictions.endOfRangeMin.toLocaleString()}-${predictions.endOfRangeMax.toLocaleString()})`;
+      } else {
+        endOfRangeEl.textContent = predictions.endOfRange.toLocaleString();
+      }
+
       UI.updateIndicator("trendIndicator", predictions.trend);
 
-      // Update last refresh time with cache age indicator
+      // Momentum
+      const momentumEl = document.getElementById("momentumIndicator");
+      if (predictions.momentum !== undefined) {
+        momentumEl.textContent = predictions.momentum.toFixed(2) + "x";
+      } else {
+        momentumEl.textContent = "-";
+      }
+
+      // Update last refresh time
       const lastUpdatedElement = document.getElementById("lastUpdated");
       if (lastUpdatedElement) {
         const cacheDate = new Date(cachedData.timestamp);
@@ -113,8 +136,7 @@ async function loadDataInternal(forceRefresh = false) {
           minute: "2-digit",
           second: "2-digit",
         });
-        const ageMinutes = Math.round((Date.now() - cachedData.timestamp) / 1000 / 60);
-        lastUpdatedElement.innerHTML = `${timeString} <span class="text-xs text-gray-500 dark:text-gray-400">(${ageMinutes}m ago)</span>`;
+        lastUpdatedElement.innerHTML = `<span class="text-gray-900 dark:text-gray-100">${timeString}</span>`;
       }
 
       startRefreshCountdown();
@@ -127,18 +149,13 @@ async function loadDataInternal(forceRefresh = false) {
   }
 
   // Disable the update button
-  UI.updateButton('button[onclick="loadData()"]', "🔄 Updating...", true);
+  UI.updateButton('#updateBtn', "🔄 Updating...", true);
 
   // Show loading progress
   const updateIndicator = document.getElementById("lastUpdated");
-  const originalText = updateIndicator ? updateIndicator.textContent : "";
   if (updateIndicator) {
-    updateIndicator.innerHTML = `<span class="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 dark:border-blue-300 mr-2"></span>Fetching data...`;
-    updateIndicator.classList.remove(
-      "text-gray-900",
-      "dark:text-gray-100"
-    );
-    updateIndicator.classList.add("text-blue-600", "dark:text-blue-300");
+    const currentText = updateIndicator.textContent;
+    updateIndicator.innerHTML = `<span class="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 dark:border-blue-300 mr-2"></span><span class="text-gray-900 dark:text-gray-100">${currentText}</span>`;
   }
 
   try {
@@ -189,42 +206,43 @@ async function loadDataInternal(forceRefresh = false) {
     // Calculate and display predictions (batched)
     const predictions = calculatePredictions(currentData, avgData);
     requestAnimationFrame(() => {
-      const updates = [
-        { id: "currentPace", value: predictions.pace },
-        { id: "next24hPrediction", value: predictions.next24h.toLocaleString() + " tweets" },
-        { id: "weekEndPrediction", value: predictions.endOfRange.toLocaleString() + " tweets" },
-        { id: "trendIndicator", value: predictions.trend }
-      ];
+      // Update pace
+      document.getElementById("currentPace").textContent = predictions.pace;
 
-      // Batch DOM updates
-      updates.forEach(({ id, value }) => {
-        const element = document.getElementById(id);
-        if (element) element.textContent = value;
-      });
+      // Next 24h with confidence interval
+      const next24hEl = document.getElementById("next24hPrediction");
+      if (predictions.next24hMin !== undefined && predictions.next24hMax !== undefined) {
+        next24hEl.textContent = `${predictions.next24h.toLocaleString()} (${predictions.next24hMin}-${predictions.next24hMax})`;
+      } else {
+        next24hEl.textContent = predictions.next24h.toLocaleString();
+      }
+
+      // End of range with confidence interval
+      const endOfRangeEl = document.getElementById("weekEndPrediction");
+      if (predictions.endOfRangeMin !== undefined && predictions.endOfRangeMax !== undefined) {
+        endOfRangeEl.textContent = `${predictions.endOfRange.toLocaleString()} (${predictions.endOfRangeMin.toLocaleString()}-${predictions.endOfRangeMax.toLocaleString()})`;
+      } else {
+        endOfRangeEl.textContent = predictions.endOfRange.toLocaleString();
+      }
+
+      // Trend
+      document.getElementById("trendIndicator").textContent = predictions.trend;
+
+      // Momentum
+      const momentumEl = document.getElementById("momentumIndicator");
+      if (predictions.momentum !== undefined) {
+        momentumEl.textContent = predictions.momentum.toFixed(2) + "x";
+      } else {
+        momentumEl.textContent = "-";
+      }
     });
 
     // Update last refresh time and start countdown
     updateLastRefreshTime();
     startRefreshCountdown();
 
-    // Reset the update indicator color
-    if (updateIndicator) {
-      updateIndicator.classList.remove(
-        "text-blue-600",
-        "dark:text-blue-300"
-      );
-      updateIndicator.classList.add(
-        "text-gray-900",
-        "dark:text-gray-100"
-      );
-    }
-
     // Re-enable the update button
-    UI.updateButton(
-      'button[onclick="loadData()"]',
-      "🔄 Update Now",
-      false
-    );
+    UI.updateButton('#updateBtn', "🔄 Update", false);
 
     // Reset loading flag
     updateState({ isLoadingData: false });
@@ -265,20 +283,10 @@ async function loadDataInternal(forceRefresh = false) {
     // Reset the update indicator with specific error
     if (updateIndicator) {
       updateIndicator.innerHTML = `<span class="text-red-600 dark:text-red-400">⚠️ ${errorType}</span>`;
-      updateIndicator.classList.remove(
-        "text-blue-600",
-        "dark:text-blue-300",
-        "text-gray-900",
-        "dark:text-gray-100"
-      );
     }
 
     // Re-enable the update button
-    UI.updateButton(
-      'button[onclick="loadData()"]',
-      "🔄 Update Now",
-      false
-    );
+    UI.updateButton('#updateBtn', "🔄 Update", false);
 
     // Reset loading flag
     updateState({ isLoadingData: false });

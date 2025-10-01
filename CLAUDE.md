@@ -357,6 +357,152 @@ Always use this function instead of native Date methods when you need timezone-a
 
 **Remember**: ANY date operation should use `getETComponents()` from `utils/dateTime.js` or `createETNoonDate()` helper.
 
+## Advanced Prediction Algorithms
+
+### Pattern-Based Prediction System
+
+The application uses sophisticated pattern-based predictions that consider time-of-day and day-of-week patterns, significantly improving accuracy over simple averages.
+
+#### Key Components
+
+**1. Pattern-Based Next 24h Prediction** (`data/analytics.js` → `predictNext24hWithPattern()`)
+
+Instead of using a simple hourly average, this function:
+- Iterates through each of the next 24 hours
+- For each hour, retrieves the corresponding 4-week average value for that specific time-of-day and day-of-week
+- Applies a combined factor of trend and momentum
+- Sums all hourly predictions
+
+**Benefits**:
+- ✅ Captures time-of-day patterns (morning vs. evening activity)
+- ✅ Automatically reflects day-of-week differences (weekday vs. weekend)
+- ✅ More accurate than flat hourly averages
+
+**2. Momentum Calculation** (`data/analytics.js` → `calculateRecentMomentum()`)
+
+Analyzes the last 6 hours to detect acceleration or deceleration:
+```javascript
+Momentum = (Recent 6h actual) / (Recent 6h expected from 4-week avg)
+```
+
+**Use cases**:
+- Detects sudden spikes or drops in activity
+- Gives more weight to very recent behavior
+- Complements long-term trend factor
+
+**3. Confidence Intervals** (`data/analytics.js` → `calculatePredictionConfidence()`)
+
+Provides 90% confidence intervals based on historical variance:
+```javascript
+stdDev = sqrt(variance of 4-week average data)
+margin = stdDev × 1.5 × sqrt(24)  // for 24-hour prediction
+min = prediction - margin
+max = prediction + margin
+```
+
+**Display format**: `55 (45-65)` - prediction with 90% confidence interval always visible
+
+#### Helper Functions
+
+**`getDayIndexFromStart(time, startDate)`**
+- Calculates day index (0-7) relative to range start
+- Handles ET timezone correctly
+- Returns -1 if outside range
+
+**`getGridValue(grid, hour, day)`**
+- Safely retrieves grid value with boundary checks
+- Enforces noon boundaries (day 0 hour < 12, day 7 hour >= 12)
+- Returns 0 for invalid cells
+
+#### Prediction Flow
+
+```
+1. Calculate Trend Factor
+   └─> current total / comparable 4-week average
+
+2. Calculate Momentum (last 6 hours)
+   └─> recent 6h actual / recent 6h expected
+
+3. For Next 24h:
+   For each hour (i = 0 to 23):
+     ├─> Get future time (now + i hours)
+     ├─> Get day index and hour
+     ├─> Retrieve 4-week average for that hour/day
+     ├─> Combined Factor = (momentum × 0.3) + (trend × 0.7)
+     └─> Prediction += avgValue × combinedFactor
+
+4. Calculate Confidence Interval
+   ├─> Compute variance across 4-week data
+   ├─> Scale for 24-hour timeframe
+   └─> Return min/max bounds
+
+5. For End of Range:
+   ├─> Similar pattern-based approach for all remaining hours
+   └─> Wider confidence interval (scales with time)
+```
+
+#### When to Modify Prediction Logic
+
+**Adjusting weights**:
+```javascript
+// In data/analytics.js
+const combinedFactor = (momentum * 0.3) + (trendFactor * 0.7);
+```
+- Increase momentum weight (e.g., 0.4) for more reactivity to recent changes
+- Increase trend weight (e.g., 0.8) for more stability
+
+**Changing momentum window**:
+```javascript
+// In calculatePredictionsInternal()
+const momentum = calculateRecentMomentum(currentData, avgData, now, startDate, 6);
+//                                                                              ^^
+// Change from 6 to different number of hours
+```
+
+**Adjusting confidence intervals**:
+```javascript
+// In calculatePredictionConfidence()
+const margin = predictionStdDev * 1.5;  // Change 1.5 to widen/narrow interval
+```
+
+#### Debugging Predictions
+
+Enable `DEBUG_MODE` in `config/constants.js` to see detailed logs:
+
+```javascript
+export const DEBUG_MODE = true;
+```
+
+Look for these console logs:
+- **Recent Momentum**: Shows last 6h actual vs expected
+- **Next 24h Pattern Prediction**: Details first 6 hours of prediction
+- **End of Range Prediction**: Remaining hours calculation
+- **Final Predictions Summary**: All metrics with ranges
+
+#### Common Prediction Issues
+
+**Issue**: Predictions seem too high/low
+
+**Diagnosis**:
+1. Check DEBUG logs for trend factor and momentum
+2. Verify 4-week average data is representative
+3. Confirm date range is correctly parsed
+
+**Fix**:
+- Adjust combined factor weights
+- Check for data quality issues (missing tweets, parsing errors)
+
+**Issue**: Confidence intervals too wide/narrow
+
+**Diagnosis**:
+1. Check standard deviation in DEBUG logs
+2. Examine 4-week data variance
+
+**Fix**:
+- Adjust margin multiplier in `calculatePredictionConfidence()`
+- If data is very stable, variance will be low (narrow intervals)
+- If data is volatile, variance will be high (wide intervals)
+
 ## Performance Considerations
 
 ### Caching Strategy

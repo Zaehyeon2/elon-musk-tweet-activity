@@ -116,7 +116,13 @@ export const UI = {
     const btn = document.querySelector(selector);
     if (btn) {
       btn.disabled = disabled;
-      btn.textContent = text;
+      // Update all spans or just the button text
+      const spans = btn.querySelectorAll('span');
+      if (spans.length > 0) {
+        spans.forEach(span => span.textContent = text);
+      } else {
+        btn.textContent = text;
+      }
       if (disabled) {
         btn.classList.add("opacity-60", "cursor-not-allowed");
       } else {

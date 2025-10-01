@@ -125,6 +125,12 @@
         }
       }
 
+      /* Info badge wrapper for relative positioning */
+      .info-badge-wrapper {
+        position: relative;
+        display: inline-block;
+      }
+
     </style>
   </head>
   <body
@@ -155,6 +161,7 @@
           <!-- Button Controls - 50% -->
           <div class="grid grid-cols-2 lg:flex lg:justify-between gap-2">
           <button
+            id="updateBtn"
             onclick="handleButtonClick(event, () => loadData(true))"
             class="px-3 py-2.5 lg:flex-1 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md font-bold transition-all duration-200 transform active:scale-95 min-h-[44px] whitespace-nowrap"
           >
@@ -240,12 +247,20 @@
       <div
         class="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-3 mb-4"
       >
-        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+        <div class="grid grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
             <div
               class="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1"
             >
               <span class="mr-1 text-xs sm:text-sm">⏱️</span> Current Pace
+              <div class="info-badge-wrapper">
+                <span class="inline-flex items-center justify-center w-4 h-4 ml-1 text-[11px] font-bold rounded-full border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:border-blue-500 cursor-help transition-all duration-200">i</span>
+                <div class="hidden absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs rounded-lg shadow-xl z-50 tooltip-content">
+                  <div class="font-semibold mb-1">현재 페이스 유지 시 기간 종료까지 예상 총 트윗 수</div>
+                  <div class="text-gray-300 dark:text-gray-600 text-[11px]">(현재 트윗수 ÷ 경과시간) × 전체 기간</div>
+                  <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-gray-100"></div>
+                </div>
+              </div>
             </div>
             <div
               id="currentPace"
@@ -259,6 +274,14 @@
               class="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1"
             >
               <span class="mr-1 text-xs sm:text-sm">🔮</span> Next 24h
+              <div class="info-badge-wrapper">
+                <span class="inline-flex items-center justify-center w-4 h-4 ml-1 text-[11px] font-bold rounded-full border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:border-blue-500 cursor-help transition-all duration-200">i</span>
+                <div class="hidden absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs rounded-lg shadow-xl z-50 tooltip-content">
+                  <div class="font-semibold mb-1">향후 24시간 예상 트윗 수 (90% 신뢰구간)</div>
+                  <div class="text-gray-300 dark:text-gray-600 text-[11px]">시간대별 4주 평균 패턴 × (트렌드 70% + 모멘텀 30%)</div>
+                  <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-gray-100"></div>
+                </div>
+              </div>
             </div>
             <div
               id="next24hPrediction"
@@ -272,6 +295,14 @@
               class="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1"
             >
               <span class="mr-1 text-xs sm:text-sm">🎯</span> End of Range
+              <div class="info-badge-wrapper">
+                <span class="inline-flex items-center justify-center w-4 h-4 ml-1 text-[11px] font-bold rounded-full border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:border-blue-500 cursor-help transition-all duration-200">i</span>
+                <div class="hidden absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs rounded-lg shadow-xl z-50 tooltip-content">
+                  <div class="font-semibold mb-1">기간 종료 시 예상 총 트윗 수 (90% 신뢰구간)</div>
+                  <div class="text-gray-300 dark:text-gray-600 text-[11px]">현재 트윗수 + (남은 시간별 4주 평균 × (트렌드 70% + 모멘텀 30%))</div>
+                  <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-gray-100"></div>
+                </div>
+              </div>
             </div>
             <div
               id="weekEndPrediction"
@@ -285,9 +316,38 @@
               class="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1"
             >
               <span class="mr-1 text-xs sm:text-sm">📊</span> Trend
+              <div class="info-badge-wrapper">
+                <span class="inline-flex items-center justify-center w-4 h-4 ml-1 text-[11px] font-bold rounded-full border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:border-blue-500 cursor-help transition-all duration-200">i</span>
+                <div class="hidden absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs rounded-lg shadow-xl z-50 tooltip-content">
+                  <div class="font-semibold mb-1">전체 활동 추세 (4주 평균 대비)</div>
+                  <div class="text-gray-300 dark:text-gray-600 text-[11px]">현재 총 트윗 ÷ 동일 경과시간 4주 평균</div>
+                  <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-gray-100"></div>
+                </div>
+              </div>
             </div>
             <div
               id="trendIndicator"
+              class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100"
+            >
+              -
+            </div>
+          </div>
+          <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+            <div
+              class="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-1"
+            >
+              <span class="mr-1 text-xs sm:text-sm">⚡</span> Momentum
+              <div class="info-badge-wrapper">
+                <span class="inline-flex items-center justify-center w-4 h-4 ml-1 text-[11px] font-bold rounded-full border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:border-blue-500 cursor-help transition-all duration-200">i</span>
+                <div class="hidden absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs rounded-lg shadow-xl z-50 tooltip-content">
+                  <div class="font-semibold mb-1">최근 6시간 가속도 (4주 평균 대비)</div>
+                  <div class="text-gray-300 dark:text-gray-600 text-[11px]">최근 6시간 실제 ÷ 최근 6시간 4주 평균</div>
+                  <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-gray-100"></div>
+                </div>
+              </div>
+            </div>
+            <div
+              id="momentumIndicator"
               class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100"
             >
               -
@@ -364,6 +424,57 @@
       init();
 
       console.log('init() called');
+
+      // Handle tooltip toggle
+      document.addEventListener('DOMContentLoaded', () => {
+        const wrappers = document.querySelectorAll('.info-badge-wrapper');
+
+        wrappers.forEach(wrapper => {
+          const badge = wrapper.querySelector('span');
+          const tooltip = wrapper.querySelector('.tooltip-content');
+
+          if (!badge || !tooltip) return;
+
+          // Desktop: hover
+          if (window.matchMedia('(hover: hover)').matches) {
+            badge.addEventListener('mouseenter', () => {
+              tooltip.classList.remove('hidden');
+            });
+
+            badge.addEventListener('mouseleave', () => {
+              tooltip.classList.add('hidden');
+            });
+          }
+
+          // Mobile: click
+          badge.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            // Close other tooltips
+            wrappers.forEach(otherWrapper => {
+              if (otherWrapper !== wrapper) {
+                const otherTooltip = otherWrapper.querySelector('.tooltip-content');
+                if (otherTooltip) {
+                  otherTooltip.classList.add('hidden');
+                }
+              }
+            });
+
+            // Toggle current tooltip
+            tooltip.classList.toggle('hidden');
+          });
+        });
+
+        // Close tooltips when clicking outside
+        document.addEventListener('click', () => {
+          wrappers.forEach(wrapper => {
+            const tooltip = wrapper.querySelector('.tooltip-content');
+            if (tooltip) {
+              tooltip.classList.add('hidden');
+            }
+          });
+        });
+      });
     </script>
   </body>
 </html>
