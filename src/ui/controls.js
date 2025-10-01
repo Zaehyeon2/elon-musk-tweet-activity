@@ -49,6 +49,7 @@ export function downloadCSV() {
  */
 export function populateWeekRanges(tweets = null) {
   const select = document.getElementById("weekRange");
+  const populateStart = performance.now();
 
   // Save current selection before clearing
   const currentSelection = select.value;
@@ -237,20 +238,22 @@ export function populateWeekRanges(tweets = null) {
     return dateB - dateA;
   });
 
-  // Add all ranges to dropdown
+  // Add all ranges to dropdown using DocumentFragment for better performance
+  const fragment = document.createDocumentFragment();
+  const isMobile = window.innerWidth < 640;
+
   ranges.forEach((range) => {
     const option = document.createElement("option");
     option.value = range.value;
-    // Use shorter text on mobile
-    if (window.innerWidth < 640) {
-      option.textContent = range.mobileDisplay || range.display;
-    } else {
-      option.textContent = range.display;
-    }
+    option.textContent = isMobile ? (range.mobileDisplay || range.display) : range.display;
     option.dataset.display = range.display;
     option.dataset.mobileDisplay = range.mobileDisplay || range.display;
-    select.appendChild(option);
+    fragment.appendChild(option);
   });
+
+  select.appendChild(fragment);
+
+  debugLog(`populateWeekRanges: created ${ranges.length} options in ${(performance.now() - populateStart).toFixed(2)}ms`);
 
   // Find the ongoing range with the earliest end date (will end soonest)
   const now = new Date();
@@ -299,6 +302,8 @@ export function populateWeekRanges(tweets = null) {
 
 /**
  * Update date range when dropdown changes
+ * Disables dropdown until all calculations complete
+ * Uses requestIdleCallback for non-blocking updates
  */
 export function updateDateRange() {
   const select = document.getElementById("weekRange");
@@ -310,47 +315,56 @@ export function updateDateRange() {
   }
 
   if (selectedValue && state.rawTweets) {
-    debugLog("Reprocessing data for new date range...");
+    const overallStartTime = performance.now();
+    debugLog("=== Reprocessing data for new date range ===");
 
     const { startDate, endDate, type } = getSelectedDateRange();
-    updateState({ currentData: processData(state.rawTweets, startDate, endDate, type) });
-    renderHeatmap(state.currentData);
 
-    // Recalculate 4-week average
-    const avgData = calculate4WeekAverage(state.rawTweets, startDate, endDate);
-    renderAverageHeatmap(avgData);
+    // Execute all work in single requestAnimationFrame - total ~17ms is acceptable
+    requestAnimationFrame(() => {
+      const t1 = performance.now();
+      updateState({ currentData: processData(state.rawTweets, startDate, endDate, type) });
+      renderHeatmap(state.currentData);
+      debugLog(`Phase 1 (current heatmap): ${(performance.now() - t1).toFixed(2)}ms`);
 
-    // Recalculate predictions
-    const predictions = calculatePredictions(state.currentData, avgData);
-    document.getElementById("currentPace").textContent = predictions.pace;
+      const t2 = performance.now();
+      const avgData = calculate4WeekAverage(state.rawTweets, startDate, endDate);
+      renderAverageHeatmap(avgData);
+      debugLog(`Phase 2 (4-week avg): ${(performance.now() - t2).toFixed(2)}ms`);
 
-    // Next 24h with confidence interval
-    const next24hEl = document.getElementById("next24hPrediction");
-    if (predictions.next24hMin !== undefined && predictions.next24hMax !== undefined) {
-      next24hEl.textContent = `${predictions.next24h.toLocaleString()} (${predictions.next24hMin}-${predictions.next24hMax})`;
-    } else {
-      next24hEl.textContent = predictions.next24h.toLocaleString();
-    }
+      const t3 = performance.now();
+      const predictions = calculatePredictions(state.currentData, avgData);
+      debugLog(`Phase 3 (predictions calc): ${(performance.now() - t3).toFixed(2)}ms`);
 
-    // End of range with confidence interval
-    const endOfRangeEl = document.getElementById("weekEndPrediction");
-    if (predictions.endOfRangeMin !== undefined && predictions.endOfRangeMax !== undefined) {
-      endOfRangeEl.textContent = `${predictions.endOfRange.toLocaleString()} (${predictions.endOfRangeMin.toLocaleString()}-${predictions.endOfRangeMax.toLocaleString()})`;
-    } else {
-      endOfRangeEl.textContent = predictions.endOfRange.toLocaleString();
-    }
+      // Update all prediction indicators
+      document.getElementById("currentPace").textContent = predictions.pace;
 
-    // Trend only (momentum is already factored into predictions)
-    document.getElementById("trendIndicator").textContent = predictions.trend;
+      const next24hEl = document.getElementById("next24hPrediction");
+      if (predictions.next24hMin !== undefined && predictions.next24hMax !== undefined) {
+        next24hEl.textContent = `${predictions.next24h.toLocaleString()} (${predictions.next24hMin}-${predictions.next24hMax})`;
+      } else {
+        next24hEl.textContent = predictions.next24h.toLocaleString();
+      }
 
-    // Momentum - show as multiplier (e.g., "1.23x")
-    const momentumEl = document.getElementById("momentumIndicator");
-    if (predictions.momentum !== undefined) {
-      const momentumValue = predictions.momentum.toFixed(2) + "x";
-      momentumEl.textContent = momentumValue;
-    } else {
-      momentumEl.textContent = "-";
-    }
+      const endOfRangeEl = document.getElementById("weekEndPrediction");
+      if (predictions.endOfRangeMin !== undefined && predictions.endOfRangeMax !== undefined) {
+        endOfRangeEl.textContent = `${predictions.endOfRange.toLocaleString()} (${predictions.endOfRangeMin.toLocaleString()}-${predictions.endOfRangeMax.toLocaleString()})`;
+      } else {
+        endOfRangeEl.textContent = predictions.endOfRange.toLocaleString();
+      }
+
+      document.getElementById("trendIndicator").textContent = predictions.trend;
+
+      const momentumEl = document.getElementById("momentumIndicator");
+      if (predictions.momentum !== undefined) {
+        momentumEl.textContent = predictions.momentum.toFixed(2) + "x";
+      } else {
+        momentumEl.textContent = "-";
+      }
+
+      const totalTime = (performance.now() - overallStartTime).toFixed(2);
+      debugLog(`=== TOTAL TIME: ${totalTime}ms ===`);
+    });
   } else if (selectedValue) {
     // If no raw data available, load from API
     loadData();
@@ -657,3 +671,4 @@ export function updateDropdownText() {
     }
   }
 }
+

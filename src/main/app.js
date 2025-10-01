@@ -409,6 +409,34 @@ export function init() {
     console.log('Adding resize listener...');
     window.addEventListener('resize', debounce(updateDropdownText, 250), { passive: true });
 
+    // Add performance monitoring for dropdown
+    const select = document.getElementById('weekRange');
+    if (select) {
+      select.addEventListener('mousedown', () => {
+        performance.mark('dropdown-open-start');
+      });
+
+      select.addEventListener('click', () => {
+        performance.mark('dropdown-open-end');
+        try {
+          performance.measure('dropdown-open', 'dropdown-open-start', 'dropdown-open-end');
+          const measure = performance.getEntriesByName('dropdown-open')[0];
+          debugLog(`Dropdown opened in ${measure.duration.toFixed(2)}ms`);
+          performance.clearMarks();
+          performance.clearMeasures();
+        } catch (e) {
+          // Ignore timing errors
+        }
+      });
+
+      // Monitor when dropdown is actually showing options
+      let observer = new MutationObserver(() => {
+        const optionCount = select.options.length;
+        debugLog(`Dropdown has ${optionCount} options`);
+      });
+      observer.observe(select, { childList: true, subtree: true });
+    }
+
     // Show skeleton loaders initially
     console.log('Showing skeleton loaders...');
     UI.showSkeletonLoader("heatmapContainer");
