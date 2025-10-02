@@ -2,6 +2,19 @@
 
 일론 머스크의 Twitter/X 게시 패턴을 실시간 히트맵으로 시각화하고 활동량을 예측하는 웹 애플리케이션입니다.
 
+> **⚠️ Migration Notice**: This project has been migrated from vanilla JavaScript to **React 19 + TypeScript**. The legacy vanilla JS version is archived in the root directory. Please use the `react-app/` directory for active development.
+
+## 🚀 Technology Stack (React Version)
+
+- **React 19.1** - Latest React with concurrent features
+- **TypeScript 5.8** - Type-safe development
+- **Vite 7.1** - Fast build tool and dev server
+- **Zustand 5.0** - Lightweight state management
+- **Tailwind CSS 3.4** - Utility-first styling
+- **shadcn/ui** - High-quality React components (Radix UI)
+- **PapaParse** - CSV parsing
+- **date-fns** - Date manipulation
+
 ## ✨ 주요 기능
 
 ### 📊 데이터 시각화
@@ -25,21 +38,47 @@
 
 ## 🚀 빠른 시작
 
-### 설치 및 실행
+### 설치 및 실행 (React Version)
 
-1. **파일 다운로드**
+1. **저장소 클론**
    ```bash
    git clone <repository-url>
-   cd elon-musk-tweet-activity
+   cd elon-musk-tweet-activity/react-app
    ```
 
-2. **실행**
-   - `index.html`을 웹 브라우저에서 열기
-   - 또는 로컬 서버 실행:
-     ```bash
-     python -m http.server 8000
-     # 브라우저에서 http://localhost:8000 접속
-     ```
+2. **의존성 설치**
+   ```bash
+   yarn install
+   # 또는
+   npm install
+   ```
+
+3. **개발 서버 실행**
+   ```bash
+   yarn dev
+   # 또는
+   npm run dev
+   # 브라우저에서 http://localhost:5173 자동 열림
+   ```
+
+4. **프로덕션 빌드**
+   ```bash
+   yarn build
+   # 또는
+   npm run build
+   # 빌드 결과물: dist/ 디렉토리
+   ```
+
+### 레거시 Vanilla JS 버전 (Archived)
+
+레거시 버전을 실행하려면:
+```bash
+cd elon-musk-tweet-activity
+# index.html을 브라우저에서 직접 열거나
+python -m http.server 8000
+```
+
+> **참고**: 레거시 버전은 유지보수되지 않습니다. React 버전을 사용하세요.
 
 ### 사용 방법
 
@@ -211,126 +250,162 @@ Momentum = 최근 6시간 실제 트윗 / 최근 6시간 4주 평균
 - **데이터 로드**: 최근 5주치만 로드 (현재 주 + 4주 평균용)
 
 ### 기술 스택
-- **프론트엔드**: Vanilla JavaScript (ES6 Modules)
-- **스타일링**: Tailwind CSS
-- **아키텍처**: 모듈 기반 (config, utils, services, data, ui, state)
-- **빌드 도구**: 없음 (모던 브라우저 네이티브 ES6 모듈 사용)
+- **프론트엔드**: React 19.1 + TypeScript 5.8
+- **스타일링**: Tailwind CSS 3.4 + shadcn/ui components
+- **상태 관리**: Zustand 5.0
+- **빌드 도구**: Vite 7.1 (Fast HMR, ESBuild)
+- **아키텍처**: Component-based (React components, hooks, utils, services, store)
 
 ## 🌐 브라우저 호환성
 
 ### 지원 브라우저
-- ✅ Chrome/Edge 89+
-- ✅ Firefox 89+
+- ✅ Chrome/Edge 90+
+- ✅ Firefox 90+
 - ✅ Safari 15+
-- ✅ 모바일 브라우저 (iOS Safari, Chrome Mobile)
+- ✅ 모바일 브라우저 (iOS Safari 15+, Chrome Mobile)
 
 ### 요구사항
 - JavaScript 활성화 필수
-- ES6 모듈 지원 (`type="module"`)
-- Intl.DateTimeFormat API 지원
+- Modern browser with ES2020+ support
+- React 19 requires modern browsers (no IE11)
 
 ### CORS 이슈 해결
 API 접근 실패 시:
-1. **브라우저 확장**: CORS Unblock 등 설치
-2. **로컬 서버**: `python -m http.server` 사용
-3. **CSV 백업**: 수동 CSV 파일 업로드
+1. **CORS 프록시**: 여러 프록시를 자동으로 시도합니다
+2. **CSV 백업**: UI에서 CSV 파일 수동 업로드 가능
+3. **로컬 캐싱**: 성공한 데이터를 LocalStorage에 캐싱
 
-## 파일 구조
+## 📁 파일 구조
 
 ```
 elon-musk-tweet-activity/
-├── index.html              # 메인 HTML 파일
 ├── src/
+│   ├── components/     # React 컴포넌트
+│   │   ├── common/    # 공통 컴포넌트 (ErrorMessage, LoadingSpinner 등)
+│   │   ├── heatmap/   # 히트맵 관련 컴포넌트
+│   │   ├── layout/    # 레이아웃 컴포넌트 (Header)
+│   │   ├── statistics/# 통계/예측 카드
+│   │   └── ui/        # shadcn/ui 컴포넌트
 │   ├── config/
-│   │   └── constants.js    # 애플리케이션 설정 상수
-│   ├── utils/
-│   │   ├── dateTime.js     # ET 시간대 처리 및 날짜 유틸리티
-│   │   └── performance.js  # 성능 최적화 (메모이제이션, 디바운스 등)
+│   │   └── constants.ts    # 설정 상수
+│   ├── hooks/         # Custom React hooks
+│   │   ├── useAutoRefresh.ts
+│   │   ├── useInitialLoad.ts
+│   │   └── useTheme.ts
 │   ├── services/
-│   │   └── api.js          # API 통신 (X Tracker API)
-│   ├── data/
-│   │   ├── parser.js       # CSV 파싱
-│   │   ├── processor.js    # 데이터 처리 및 히트맵 변환
-│   │   └── analytics.js    # 예측 및 트렌드 분석
-│   ├── state/
-│   │   └── appState.js     # 전역 애플리케이션 상태 관리
-│   ├── ui/
-│   │   ├── components.js   # 기본 UI 컴포넌트 (툴팁, 버튼 등)
-│   │   ├── uiHelpers.js    # UI 헬퍼 함수 및 DOM 참조
-│   │   ├── heatmap.js      # 히트맵 렌더링
-│   │   ├── controls.js     # 날짜 범위, 새로고침 등 컨트롤
-│   │   └── theme.js        # 다크 모드 및 테마 관리
-│   └── main/
-│       └── app.js          # 메인 애플리케이션 진입점
-└── CLAUDE.md               # 개발 가이드라인
+│   │   ├── api.ts     # X Tracker API
+│   │   └── cache.ts   # LocalStorage 캐싱
+│   ├── store/
+│   │   └── useAppStore.ts  # Zustand 전역 상태
+│   ├── types/
+│   │   └── index.ts   # TypeScript 타입 정의
+│   ├── utils/
+│   │   ├── analytics.ts    # 예측 알고리즘
+│   │   ├── dateTime.ts     # ET 시간대 처리
+│   │   ├── parser.ts       # CSV 파싱
+│   │   ├── processor.ts    # 데이터 변환
+│   │   └── performance.ts  # 성능 최적화
+│   ├── App.tsx        # 메인 앱 컴포넌트
+│   └── main.tsx       # 진입점
+├── package.json
+├── vite.config.ts
+├── tsconfig.json
+├── CLAUDE.md              # 개발 가이드라인 (React 버전으로 업데이트됨)
+└── README.md              # 이 파일
 ```
 
-### 모듈 설명
+### React 앱 모듈 설명
 
-- **config/**: 애플리케이션 전역 설정 (디버그 모드, 예측 가중치, 자동 새로고침 주기 등)
-- **utils/**: 재사용 가능한 유틸리티 함수
-  - `dateTime.js`: ET 시간대 변환, 날짜 파싱, 캐싱
-  - `performance.js`: 메모이제이션, 디바운스, 쓰로틀
-- **services/**: 외부 서비스 통신
-  - `api.js`: X Tracker API 호출 및 CORS 프록시
-- **data/**: 데이터 처리 및 분석 로직
-  - `parser.js`: CSV 파일 파싱
-  - `processor.js`: 트윗을 히트맵 그리드로 변환
-  - `analytics.js`: 예측, 트렌드, 4주 평균 계산
-- **state/**: 앱 상태 관리
-  - `appState.js`: 현재 데이터, 날짜 범위, 자동 새로고침 상태
-- **ui/**: UI 렌더링 및 사용자 상호작용
-  - `components.js`: 재사용 가능한 UI 컴포넌트
-  - `heatmap.js`: 히트맵 테이블 렌더링
-  - `controls.js`: 버튼, 드롭다운, 파일 업로드 핸들러
-  - `theme.js`: 다크/라이트 모드 토글
-- **main/**: 애플리케이션 초기화 및 오케스트레이션
+- **components/**: React 컴포넌트 (기능별로 분류)
+  - `common/`: 재사용 가능한 공통 컴포넌트
+  - `heatmap/`: 히트맵 테이블 및 관련 UI
+  - `layout/`: 헤더, 컨트롤 패널
+  - `statistics/`: 통계 및 예측 카드
+  - `ui/`: shadcn/ui 기반 UI 컴포넌트
+- **config/**: 전역 설정 (디버그 모드, 예측 가중치 등)
+- **hooks/**: Custom React hooks (auto-refresh, theme, performance 등)
+- **services/**: 외부 API 통신 및 캐싱
+- **store/**: Zustand 전역 상태 관리 (vanilla state 대체)
+- **types/**: TypeScript 인터페이스 및 타입 정의
+- **utils/**: 순수 함수 유틸리티 (날짜, 분석, 파싱, 성능)
 
-## 👨‍💻 개발 가이드
+## 👨‍💻 개발 가이드 (React Version)
 
 ### 개발 환경 설정
 
-빌드 과정이 필요 없습니다. ES6 모듈을 네이티브로 사용하며 모던 브라우저에서 바로 실행됩니다.
+1. **의존성 설치**
+   ```bash
+   cd react-app
+   yarn install
+   ```
 
-**디버그 모드 활성화**:
-```javascript
-// src/config/constants.js
-export const DEBUG_MODE = true; // 콘솔에 상세 로그 출력
+2. **개발 서버 실행**
+   ```bash
+   yarn dev
+   # HMR(Hot Module Replacement) 지원으로 자동 리로드
+   ```
+
+3. **디버그 모드 활성화**
+   ```typescript
+   // react-app/src/config/constants.ts
+   export const DEBUG_MODE = true; // 콘솔에 상세 로그 출력
+   ```
+
+### 사용 가능한 스크립트
+
+```bash
+yarn dev          # 개발 서버 시작 (HMR)
+yarn build        # 프로덕션 빌드
+yarn preview      # 빌드 결과물 미리보기
+yarn lint         # ESLint 검사
+yarn lint:fix     # ESLint 자동 수정
+yarn format       # Prettier 포매팅
+yarn type-check   # TypeScript 타입 검사
 ```
 
 ### 기본 워크플로우
 
-1. **코드 수정**: `src/` 디렉토리 내 관련 모듈 편집
-2. **테스트**: 브라우저 새로고침 (F5 또는 Cmd+R)
-3. **디버깅**: 개발자 도구 콘솔 확인 (F12)
-4. **반복**: 수정 → 테스트 → 디버깅
+1. **코드 수정**: `react-app/src/` 디렉토리 내 파일 편집
+2. **자동 리로드**: 변경사항이 자동으로 브라우저에 반영됨 (HMR)
+3. **타입 검사**: TypeScript가 실시간으로 타입 오류 표시
+4. **디버깅**: React DevTools + Zustand DevTools 사용
 
-### 모듈별 수정 가이드
+### 모듈별 수정 가이드 (React)
 
 | 작업 내용 | 수정 파일 |
 |-----------|-----------|
-| 설정값 변경 (예측 가중치, 자동 새로고침 주기 등) | `config/constants.js` |
-| 날짜/시간 처리 로직 | `utils/dateTime.js` |
-| 성능 최적화 (캐싱, 메모이제이션) | `utils/performance.js` |
-| API 엔드포인트 변경 | `services/api.js` |
-| CSV 파싱 로직 | `data/parser.js` |
-| 히트맵 데이터 처리 | `data/processor.js` |
-| 예측/분석 알고리즘 | `data/analytics.js` |
-| 전역 상태 관리 | `state/appState.js` |
-| UI 컴포넌트 (툴팁, 버튼 등) | `ui/components.js` |
-| 히트맵 렌더링 | `ui/heatmap.js` |
-| 컨트롤 패널 (드롭다운, 버튼) | `ui/controls.js` |
-| 테마 (다크 모드) | `ui/theme.js` |
-| 앱 초기화 및 오케스트레이션 | `main/app.js` |
+| 설정값 변경 | `config/constants.ts` |
+| 날짜/시간 처리 로직 | `utils/dateTime.ts` |
+| 성능 최적화 | `utils/performance.ts` |
+| API 엔드포인트 변경 | `services/api.ts` |
+| CSV 파싱 로직 | `utils/parser.ts` |
+| 히트맵 데이터 처리 | `utils/processor.ts` |
+| 예측/분석 알고리즘 | `utils/analytics.ts` |
+| 전역 상태 관리 | `store/useAppStore.ts` (Zustand) |
+| UI 컴포넌트 | `components/` 디렉토리 |
+| 히트맵 렌더링 | `components/heatmap/Heatmap.tsx` |
+| 헤더/컨트롤 패널 | `components/layout/Header.tsx` |
+| 테마 (다크 모드) | `hooks/useTheme.ts` |
+| TypeScript 타입 정의 | `types/index.ts` |
 
 ### 중요 개발 규칙
 
 #### ⚠️ 필수 준수 사항
 
-1. **날짜/시간 처리**
-   ```javascript
+1. **TypeScript 타입 사용**
+   ```typescript
    // ✅ CORRECT
-   import { getETComponents } from '../utils/dateTime.js';
+   import type { HeatmapData } from '@/types';
+   function processData(data: HeatmapData): void { ... }
+
+   // ❌ WRONG - any 타입 사용
+   function processData(data: any): void { ... }
+   ```
+
+2. **날짜/시간 처리**
+   ```typescript
+   // ✅ CORRECT
+   import { getETComponents } from '@/utils/dateTime';
    const et = getETComponents(date);
    const hour = et.hour;
 
@@ -338,36 +413,47 @@ export const DEBUG_MODE = true; // 콘솔에 상세 로그 출력
    const hour = date.getHours();
    ```
 
-2. **스타일링**
-   ```html
-   <!-- ✅ CORRECT - Tailwind 클래스 -->
-   <div class="text-sm md:text-base dark:text-gray-300">
+3. **스타일링**
+   ```tsx
+   {/* ✅ CORRECT - Tailwind 클래스 */}
+   <div className="text-sm md:text-base dark:text-gray-300">
 
-   <!-- ❌ WRONG - 인라인 스타일 -->
-   <div style="font-size: 14px; color: #333;">
+   {/* ❌ WRONG - 인라인 스타일 */}
+   <div style={{ fontSize: '14px', color: '#333' }}>
    ```
 
-3. **모듈 의존성**
-   - 순환 의존성 금지
-   - 계층 구조 준수: config ← utils ← services/data ← ui ← main
+4. **Zustand 상태 사용**
+   ```typescript
+   // ✅ CORRECT - 컴포넌트에서 구독
+   const { currentData } = useAppStore();
+
+   // ❌ WRONG - 직접 getState() 호출 (재렌더링 안 됨)
+   const store = useAppStore.getState();
+   ```
 
 ### 테스트 체크리스트
 
 코드 수정 후 반드시 확인:
 
+- [ ] `yarn type-check` - TypeScript 오류 없음
+- [ ] `yarn lint` - ESLint 오류 없음
+- [ ] `yarn build` - 빌드 성공
 - [ ] Chrome, Firefox, Safari 중 2개 이상 브라우저 테스트
 - [ ] 모바일 뷰 확인 (< 640px)
 - [ ] 태블릿 뷰 확인 (640-1024px)
 - [ ] 데스크톱 뷰 확인 (> 1024px)
-- [ ] 다크 모드 테스트
+- [ ] 다크 모드 토글 테스트
 - [ ] 날짜/시간 관련 수정 시 ET 시간대 확인
-- [ ] 콘솔 에러 없는지 확인
-- [ ] 자동 새로고침 동작 확인
+- [ ] React DevTools에서 불필요한 재렌더링 확인
+- [ ] 자동 새로고침 동작 확인 (토글 ON/OFF)
 
 ### 상세 개발 가이드
 
 더 자세한 내용은 [`CLAUDE.md`](./CLAUDE.md) 참조:
-- 모듈 아키텍처 상세 설명
+- React 아키텍처 상세 설명
+- Zustand 상태 관리 가이드
+- TypeScript 타입 정의 방법
+- Custom Hooks 사용법
 - 성능 최적화 가이드
 - 문제 해결 (Troubleshooting)
 - 새 기능 추가 예시

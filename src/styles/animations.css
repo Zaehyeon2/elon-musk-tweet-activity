@@ -1,0 +1,129 @@
+/* Heatmap cell animations */
+@keyframes fadeEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 20px rgba(34, 197, 94, 0.8),
+      0 0 30px rgba(34, 197, 94, 0.4);
+  }
+}
+
+.heatmap-cell-animated {
+  animation: fadeEnter 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+.heatmap-cell-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Stagger animation delays */
+.animation-delay-0 {
+  animation-delay: 0ms;
+}
+.animation-delay-1 {
+  animation-delay: 10ms;
+}
+.animation-delay-2 {
+  animation-delay: 20ms;
+}
+.animation-delay-3 {
+  animation-delay: 30ms;
+}
+.animation-delay-4 {
+  animation-delay: 40ms;
+}
+.animation-delay-5 {
+  animation-delay: 50ms;
+}
+.animation-delay-6 {
+  animation-delay: 60ms;
+}
+.animation-delay-7 {
+  animation-delay: 70ms;
+}
+.animation-delay-8 {
+  animation-delay: 80ms;
+}
+.animation-delay-9 {
+  animation-delay: 90ms;
+}
+.animation-delay-10 {
+  animation-delay: 100ms;
+}
+
+/* Theme toggle icon animation */
+@keyframes rotateIcon {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.theme-icon-rotate {
+  animation: rotateIcon 0.5s ease-in-out;
+}
+
+/* Theme toggle button hover effect */
+.theme-toggle-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-toggle-button:before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background-color: currentColor;
+  opacity: 0.1;
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.3s,
+    height 0.3s;
+}
+
+.theme-toggle-button:hover:before {
+  width: 100%;
+  height: 100%;
+}
+
+/* Shimmer effect for skeleton loaders */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.shimmer {
+  animation: shimmer 2s linear infinite;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  background-size: 468px 100%;
+}
