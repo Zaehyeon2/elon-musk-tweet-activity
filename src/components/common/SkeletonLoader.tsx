@@ -72,7 +72,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
                   <th key={i} className="h-7 p-0">
                     <div
                       className="h-full bg-gray-200 dark:bg-gray-700 rounded mx-1 animate-pulse"
-                      style={{ animationDelay: `${i * 50}ms` }}
+                      style={{ animationDelay: `${String(i * 50)}ms` }}
                     ></div>
                   </th>
                 ))}
@@ -85,7 +85,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
                   <td className="h-7 w-12 p-0">
                     <div
                       className="h-full bg-gray-200 dark:bg-gray-700 rounded my-1 animate-pulse"
-                      style={{ animationDelay: `${rowIndex * 30}ms` }}
+                      style={{ animationDelay: `${String(rowIndex * 30)}ms` }}
                     ></div>
                   </td>
                   {Array.from({ length: cols }).map((_, colIndex) => {
@@ -94,7 +94,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
                       <td key={colIndex} className="h-7 p-0">
                         <div
                           className="h-full bg-gray-200 dark:bg-gray-700 rounded m-1 animate-pulse"
-                          style={{ animationDelay: `${delay % 1000}ms` }}
+                          style={{ animationDelay: `${String(delay % 1000)}ms` }}
                         ></div>
                       </td>
                     );

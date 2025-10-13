@@ -60,7 +60,7 @@ export class LRUCache<K, V> {
 /**
  * Global memoization cache
  */
-const globalMemoCache = new LRUCache<string, any>();
+const globalMemoCache = new LRUCache<string, unknown>();
 
 /**
  * Generic memoization function with LRU cache eviction
@@ -68,23 +68,23 @@ const globalMemoCache = new LRUCache<string, any>();
  * For hooks, prefer useMemo instead
  * This is for pure utility functions
  */
-export function memoize<T extends (...args: any[]) => any>(
-  fn: T,
+export function memoize<TArgs extends readonly unknown[], TReturn>(
+  fn: (...args: TArgs) => TReturn,
   options?: {
-    keyGenerator?: (...args: Parameters<T>) => string;
+    keyGenerator?: (...args: TArgs) => string;
     maxSize?: number;
-    cache?: LRUCache<string, ReturnType<T>>;
+    cache?: LRUCache<string, TReturn>;
   },
-): T {
-  const { keyGenerator = (...args: unknown[]) => JSON.stringify(args), cache = globalMemoCache } =
+): (...args: TArgs) => TReturn {
+  const { keyGenerator = (...args: TArgs) => JSON.stringify(args), cache = globalMemoCache } =
     options || {};
 
-  return ((...args: Parameters<T>): ReturnType<T> => {
+  return (...args: TArgs): TReturn => {
     const key = keyGenerator(...args);
 
     if (cache.has(key)) {
       debugLog('Memoization cache hit for:', key);
-      return cache.get(key)!;
+      return cache.get(key) as TReturn;
     }
 
     const result = fn(...args);
@@ -92,7 +92,7 @@ export function memoize<T extends (...args: any[]) => any>(
     debugLog('Memoization cache miss, computed for:', key);
 
     return result;
-  }) as T;
+  };
 }
 
 /**
@@ -107,7 +107,7 @@ export function clearMemoCache(): void {
  * Request queue to prevent duplicate async operations
  * Similar to React Query's deduplication
  */
-const requestQueue = new Map<string, Promise<any>>();
+const requestQueue = new Map<string, Promise<unknown>>();
 
 /**
  * Queue and deduplicate requests
@@ -116,7 +116,7 @@ const requestQueue = new Map<string, Promise<any>>();
 export function queueRequest<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
   if (requestQueue.has(key)) {
     debugLog('Returning existing request promise for:', key);
-    return requestQueue.get(key)!;
+    return requestQueue.get(key) as Promise<T>;
   }
 
   const requestPromise = requestFn().finally(() => {
@@ -134,8 +134,11 @@ export const Performance = {
   /**
    * Measure function execution time
    */
-  measureTime<T extends (...args: any[]) => any>(fn: T, label?: string): T {
-    return ((...args: Parameters<T>): ReturnType<T> => {
+  measureTime<TArgs extends readonly unknown[], TReturn>(
+    fn: (...args: TArgs) => TReturn,
+    label?: string,
+  ): (...args: TArgs) => TReturn {
+    return (...args: TArgs): TReturn => {
       const start = performance.now();
       const result = fn(...args);
       const duration = performance.now() - start;
@@ -147,14 +150,17 @@ export const Performance = {
       }
 
       return result;
-    }) as T;
+    };
   },
 
   /**
    * Measure async function execution time
    */
-  measureTimeAsync<T extends (...args: any[]) => Promise<any>>(fn: T, label?: string): T {
-    return (async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+  measureTimeAsync<TArgs extends readonly unknown[], TReturn>(
+    fn: (...args: TArgs) => Promise<TReturn>,
+    label?: string,
+  ): (...args: TArgs) => Promise<TReturn> {
+    return async (...args: TArgs): Promise<TReturn> => {
       const start = performance.now();
       try {
         const result = await fn(...args);
@@ -172,15 +178,20 @@ export const Performance = {
         debugLog(`${label || 'Async function'} failed after ${duration.toFixed(2)}ms`);
         throw error;
       }
-    }) as T;
+    };
   },
 
   /**
    * Create a performance observer for long tasks
    */
   observeLongTasks(threshold = 50): PerformanceObserver | null {
-    if (typeof window === 'undefined' || !window.PerformanceObserver) {
-      return null;
+    // Check for browser environment and PerformanceObserver support
+    if (typeof window === 'undefined') {
+      return null; // Not in browser environment
+    }
+
+    if (!('PerformanceObserver' in window)) {
+      return null; // PerformanceObserver not supported
     }
 
     try {
@@ -222,6 +233,7 @@ export const CacheStats = {
 
   printCacheStats(): void {
     const stats = this.getCacheInfo();
+    // eslint-disable-next-line no-console
     console.table(stats);
   },
 };

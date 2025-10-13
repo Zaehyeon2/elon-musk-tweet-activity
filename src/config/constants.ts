@@ -3,7 +3,7 @@
  */
 
 // Debug mode
-export const DEBUG_MODE = false; // Set to true to enable console logging
+export const DEBUG_MODE: boolean = false as boolean; // Set to true to enable console logging
 
 // Prediction weights
 export const PREDICTION_WEIGHT_CURRENT = 0.7; // Weight for current week in predictions
@@ -31,8 +31,7 @@ export const API_BASE_URL = 'https://www.xtracker.io/api';
 export const CORS_PROXY_URL = 'https://corsproxy.io/?';
 
 // Debug logging wrapper
-export const debugLog = (...args: any[]) => {
-  if (DEBUG_MODE) {
-    console.log(...args);
-  }
+export const debugLog = (...args: unknown[]) => {
+  // eslint-disable-next-line no-console
+  if (DEBUG_MODE) console.log(...args);
 };

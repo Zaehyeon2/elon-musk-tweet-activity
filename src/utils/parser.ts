@@ -15,8 +15,8 @@ import { getETComponents, parseTwitterDate } from '@/utils/dateTime';
  */
 export function parseCSV(csvText: string, weeksToKeep: number = 5): Tweet[] {
   try {
-    console.log('parseCSV: Input length:', csvText.length);
-    console.log('parseCSV: First 200 chars:', csvText.substring(0, 200));
+    debugLog('parseCSV: Input length:', csvText.length);
+    debugLog('parseCSV: First 200 chars:', csvText.substring(0, 200));
 
     const tweets: Tweet[] = [];
 
@@ -30,14 +30,14 @@ export function parseCSV(csvText: string, weeksToKeep: number = 5): Tweet[] {
       }
     });
 
-    console.log(`parseCSV: Found ${tweetLines.length} tweets by EDT/EST pattern`);
+    debugLog(`parseCSV: Found ${tweetLines.length} tweets by EDT/EST pattern`);
 
     // Calculate cutoff date
     const now = new Date();
     const cutoffDate = new Date(now);
     cutoffDate.setTime(cutoffDate.getTime() - weeksToKeep * 7 * 24 * 60 * 60 * 1000);
 
-    console.log('parseCSV: Cutoff date:', cutoffDate.toISOString());
+    debugLog('parseCSV: Cutoff date:', cutoffDate.toISOString());
 
     // Use ET components to get the current year
     const nowET = getETComponents(now);
@@ -98,7 +98,7 @@ export function parseCSV(csvText: string, weeksToKeep: number = 5): Tweet[] {
 
           // Debug logging for first few tweets
           if (tweets.length < 5) {
-            console.log('Parsing tweet:', {
+            debugLog('Parsing tweet:', {
               original: dateTimeStr,
               withYear: dateWithYear,
               parsed: tweetDate,
@@ -127,7 +127,7 @@ export function parseCSV(csvText: string, weeksToKeep: number = 5): Tweet[] {
       }
     }
 
-    console.log(`parseCSV: Parsed ${tweets.length} tweets within date range`);
+    debugLog(`parseCSV: Parsed ${tweets.length} tweets within date range`);
 
     // Debug: Check for today's tweets
     const today = new Date();
@@ -135,34 +135,28 @@ export function parseCSV(csvText: string, weeksToKeep: number = 5): Tweet[] {
     const todayStr = `${todayET.year}-${String(todayET.month + 1).padStart(2, '0')}-${String(todayET.day).padStart(2, '0')}`;
 
     const todayTweets = tweets.filter((tweet) => {
-      const tweetDate = tweet.date;
-      if (tweetDate) {
-        const tweetET = getETComponents(tweetDate);
-        const tweetStr = `${tweetET.year}-${String(tweetET.month + 1).padStart(2, '0')}-${String(tweetET.day).padStart(2, '0')}`;
-        return tweetStr === todayStr;
-      }
-      return false;
+      const tweetET = getETComponents(tweet.date);
+      const tweetStr = `${tweetET.year}-${String(tweetET.month + 1).padStart(2, '0')}-${String(tweetET.day).padStart(2, '0')}`;
+      return tweetStr === todayStr;
     });
 
-    console.log(`Today's tweets (${todayStr}):`, todayTweets.length, todayTweets.slice(0, 3));
+    debugLog(`Today's tweets (${todayStr}):`, todayTweets.length, todayTweets.slice(0, 3));
 
     // Debug: Show date range
     if (tweets.length > 0) {
       const firstTweet = tweets[0];
       const lastTweet = tweets[tweets.length - 1];
-      if (firstTweet && lastTweet) {
-        const firstDate = firstTweet.date;
-        const lastDate = lastTweet.date;
-        if (firstDate && lastDate) {
-          const firstET = getETComponents(firstDate);
-          const lastET = getETComponents(lastDate);
-          console.log('Tweet date range:', {
-            first: `${firstET.year}-${firstET.month + 1}-${firstET.day} ${firstET.hour}:${firstET.minute}`,
-            last: `${lastET.year}-${lastET.month + 1}-${lastET.day} ${lastET.hour}:${lastET.minute}`,
-            totalTweets: tweets.length,
-          });
-        }
-      }
+
+      const firstDate = firstTweet.date;
+      const lastDate = lastTweet.date;
+
+      const firstET = getETComponents(firstDate);
+      const lastET = getETComponents(lastDate);
+      debugLog('Tweet date range:', {
+        first: `${firstET.year}-${firstET.month + 1}-${firstET.day} ${firstET.hour}:${firstET.minute}`,
+        last: `${lastET.year}-${lastET.month + 1}-${lastET.day} ${lastET.hour}:${lastET.minute}`,
+        totalTweets: tweets.length,
+      });
     }
 
     // Don't sort - keep the order as parsed (newest first already)

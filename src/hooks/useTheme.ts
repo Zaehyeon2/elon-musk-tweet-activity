@@ -16,7 +16,7 @@ interface UseThemeReturn {
  * Hook for advanced theme management with system preference detection
  */
 export function useTheme(): UseThemeReturn {
-  const { theme: storeTheme, toggleTheme: storeToggleTheme } = useAppStore();
+  const { theme: storeTheme } = useAppStore();
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>('light');
   const [theme, setLocalTheme] = useState<Theme>('light');
 
@@ -31,19 +31,11 @@ export function useTheme(): UseThemeReturn {
     // Initial check
     handleChange(mediaQuery);
 
-    // Listen for changes
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => {
-        mediaQuery.removeEventListener('change', handleChange);
-      };
-    } else {
-      // Fallback for older browsers
-      mediaQuery.addListener(handleChange as any);
-      return () => {
-        mediaQuery.removeListener(handleChange as any);
-      };
-    }
+    // Listen for changes (use addEventListener - supported in all modern browsers)
+    mediaQuery.addEventListener('change', handleChange);
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
   }, []);
 
   // Initialize theme from localStorage or system preference

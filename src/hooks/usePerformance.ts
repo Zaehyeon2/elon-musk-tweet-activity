@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { debugLog } from '@/config/constants';
-import { LRUCache, memoize } from '@/utils/performance';
+import { LRUCache } from '@/utils/performance';
 
 /**
  * Hook for memoizing expensive computations with custom cache
@@ -37,6 +37,7 @@ export function useMemoWithCache<T>(
     debugLog('useMemoWithCache miss:', key);
 
     return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }
 
@@ -148,7 +149,7 @@ export function useRenderMetrics(componentName: string): void {
 
     if (renderCountRef.current > 1) {
       debugLog(
-        `${componentName} render #${renderCountRef.current}, ${timeSinceLastRender.toFixed(2)}ms since last render`,
+        `${componentName} render #${String(renderCountRef.current)}, ${timeSinceLastRender.toFixed(2)}ms since last render`,
       );
     }
   });
@@ -215,7 +216,10 @@ export function usePerformanceTracker() {
     }
 
     // Return all metrics
-    const allMetrics: Record<string, any> = {};
+    const allMetrics: Record<
+      string,
+      { avg: number; min: number; max: number; count: number; total: number }
+    > = {};
     metricsRef.current.forEach((measurements, key) => {
       const sum = measurements.reduce((a, b) => a + b, 0);
       allMetrics[key] = {
@@ -269,11 +273,12 @@ export function useLeakDetector(componentName: string) {
   );
 
   useEffect(() => {
+    const activeResources = activeResourcesRef.current;
     return () => {
-      if (activeResourcesRef.current.size > 0) {
+      if (activeResources.size > 0) {
         console.warn(
           `${componentName}: Potential memory leak detected! Active resources on unmount:`,
-          Array.from(activeResourcesRef.current),
+          Array.from(activeResources),
         );
       }
     };
@@ -339,12 +344,12 @@ export function useIntersectionObserver(
       elementRef.current = element;
 
       if (element) {
+        // Create observer if it doesn't exist
         if (!observerRef.current) {
-          observerRef.current = new IntersectionObserver(([entry]) => {
-            if (entry) {
-              setIsIntersecting(entry.isIntersecting);
-              setEntry(entry);
-            }
+          observerRef.current = new IntersectionObserver((entries) => {
+            const entry = entries[0];
+            setIsIntersecting(entry.isIntersecting);
+            setEntry(entry);
           }, options);
         }
         observerRef.current.observe(element);

@@ -34,9 +34,9 @@ export const API = {
 
         const csvText = await response.text();
 
-        console.log('API Response type:', typeof csvText);
-        console.log('API Response length:', csvText?.length);
-        console.log('API Response first 500 chars:', csvText?.substring(0, 500));
+        debugLog('API Response type:', typeof csvText);
+        debugLog('API Response length:', csvText.length);
+        debugLog('API Response first 500 chars:', csvText.substring(0, 500));
 
         // Validate response
         if (!csvText || typeof csvText !== 'string') {

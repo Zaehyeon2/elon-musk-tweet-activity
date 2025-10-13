@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
 
-import { Info } from 'lucide-react';
-
-import { cn } from '@/lib/utils';
-
 interface InfoBadgeProps {
   title: string;
   description: string;
@@ -20,8 +16,12 @@ export const InfoBadge: React.FC<InfoBadgeProps> = ({ title, description, formul
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        onMouseEnter={() => !('ontouchstart' in window) && setIsOpen(true)}
-        onMouseLeave={() => !('ontouchstart' in window) && setIsOpen(false)}
+        onMouseEnter={() => {
+          if (!('ontouchstart' in window)) setIsOpen(true);
+        }}
+        onMouseLeave={() => {
+          if (!('ontouchstart' in window)) setIsOpen(false);
+        }}
         className="inline-flex items-center justify-center w-4 h-4 ml-1 text-[10px] font-bold rounded-full border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:border-blue-500 cursor-help transition-all duration-200"
       >
         i

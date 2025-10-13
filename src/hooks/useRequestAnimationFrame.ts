@@ -84,7 +84,7 @@ export function useAnimatedValue(
     'ease-in-out': (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
   };
 
-  useRequestAnimationFrame((deltaTime) => {
+  useRequestAnimationFrame((_deltaTime) => {
     if (!startTimeRef.current) {
       startTimeRef.current = performance.now();
       startValueRef.current = currentValue;

@@ -6,14 +6,8 @@ import { API, fetchWithFallback } from '@/services/api';
 import { CacheService } from '@/services/cache';
 import { AppState, DateRange, HeatmapData, PredictionData, Tweet } from '@/types';
 import { calculate4WeekAverage, calculatePredictions } from '@/utils/analytics';
-import { generateWeekRanges, getDefaultWeekRange, WeekRange } from '@/utils/dateRanges';
-import {
-  createETNoonDate,
-  getCurrentWeekStart,
-  getETComponents,
-  getWeekRangeLabel,
-} from '@/utils/dateTime';
-import { generateCSV, parseCSV } from '@/utils/parser';
+import { generateWeekRanges, getDefaultWeekRange } from '@/utils/dateRanges';
+import { parseCSV } from '@/utils/parser';
 import { processData } from '@/utils/processor';
 
 const initialState = {
@@ -71,15 +65,15 @@ export const useAppStore = create<AppState>()(
 
                 try {
                   csvText = await API.fetchTweetData();
-                } catch (error) {
+                } catch {
                   // Try fallback proxies if primary fails
                   debugLog('Primary API failed, trying fallbacks...');
                   csvText = await fetchWithFallback();
                 }
 
-                console.log('Store: About to parse CSV, length:', csvText.length);
+                debugLog('Store: About to parse CSV, length:', csvText.length);
                 tweets = parseCSV(csvText, 5);
-                console.log('Store: Parsed tweets count:', tweets.length);
+                debugLog('Store: Parsed tweets count:', tweets.length);
 
                 if (tweets.length === 0) {
                   throw new Error('No valid tweets found');
@@ -89,7 +83,7 @@ export const useAppStore = create<AppState>()(
                 CacheService.saveTweets(tweets);
               }
 
-              console.log(`Store: Successfully loaded ${tweets.length} tweets`);
+              debugLog(`Store: Successfully loaded ${tweets.length} tweets`);
               debugLog(`Successfully loaded ${tweets.length} tweets`);
 
               // Generate available date ranges
@@ -181,31 +175,29 @@ export const useAppStore = create<AppState>()(
               // Generate available date ranges
               const ranges = generateDateRanges(tweets);
 
+              if (ranges.length === 0) {
+                throw new Error('No date ranges available');
+              }
+
               // Select current week range
               const selectedRange = ranges[0];
 
               // Process data
-              if (selectedRange) {
-                const currentData = processData(tweets, selectedRange.start, selectedRange.end);
-                const avgData = calculate4WeekAverage(
-                  tweets,
-                  selectedRange.start,
-                  selectedRange.end,
-                );
-                const predictions = calculatePredictions(currentData, avgData);
+              const currentData = processData(tweets, selectedRange.start, selectedRange.end);
+              const avgData = calculate4WeekAverage(tweets, selectedRange.start, selectedRange.end);
+              const predictions = calculatePredictions(currentData, avgData);
 
-                set({
-                  rawTweets: tweets,
-                  availableRanges: ranges,
-                  selectedRange,
-                  currentData,
-                  avgData,
-                  predictions,
-                  isLoading: false,
-                  isLoadingData: false,
-                  lastRefreshTime: new Date(),
-                });
-              }
+              set({
+                rawTweets: tweets,
+                availableRanges: ranges,
+                selectedRange,
+                currentData,
+                avgData,
+                predictions,
+                isLoading: false,
+                isLoadingData: false,
+                lastRefreshTime: new Date(),
+              });
             } catch (error) {
               console.error('Failed to upload CSV:', error);
               set({
@@ -227,10 +219,8 @@ export const useAppStore = create<AppState>()(
 
             currentData.hours.forEach((hour, hourIndex) => {
               const gridRow = currentData.grid[hourIndex];
-              if (gridRow) {
-                const row = [hour, ...gridRow];
-                csvContent += row.join(',') + '\n';
-              }
+              const row = [hour, ...gridRow];
+              csvContent += row.join(',') + '\n';
             });
 
             // Add totals row

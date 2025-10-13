@@ -7,7 +7,7 @@ import importPlugin from 'eslint-plugin-import';
 import globals from 'globals';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', '.vite', 'build'] },
+  { ignores: ['dist', 'node_modules', '.vite', 'build', 'vite.config.ts', 'tailwind.config.js', 'postcss.config.js', 'public'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
     files: ['**/*.{ts,tsx}'],
@@ -38,17 +38,17 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
 
-      // TypeScript strict rules
+      // TypeScript rules
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
       ],
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/no-empty-interface': 'off',
-      '@typescript-eslint/ban-ts-comment': 'warn',
+      '@typescript-eslint/ban-ts-comment': 'off',
       '@typescript-eslint/no-misused-promises': [
         'error',
         {
@@ -57,6 +57,7 @@ export default tseslint.config(
           },
         },
       ],
+      '@typescript-eslint/restrict-template-expressions': 'off',
 
       // Import rules
       'import/order': [

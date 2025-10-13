@@ -3,7 +3,6 @@ import React from 'react';
 import { AlertCircle, BarChart3, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
   type: 'error' | 'no-data';

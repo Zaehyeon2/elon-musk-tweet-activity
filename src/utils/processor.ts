@@ -5,14 +5,7 @@
 
 import { DAYS_IN_WEEK, debugLog, HOURS_IN_DAY } from '@/config/constants';
 import { HeatmapData, Tweet } from '@/types';
-import {
-  formatHour,
-  getDayName,
-  getETComponents,
-  getWeekRangeLabel,
-  parseETNoonDate,
-  parseTwitterDate,
-} from '@/utils/dateTime';
+import { formatHour, getETComponents, getWeekRangeLabel, parseETNoonDate } from '@/utils/dateTime';
 
 /**
  * Generate day labels for the heatmap
@@ -28,7 +21,7 @@ export function generateDayLabels(startDate: Date, dayCount: number): string[] {
     const currentDate = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
     const etComponents = getETComponents(currentDate);
     const dayOfWeek = etComponents.dayOfWeek;
-    days.push(dayNames[dayOfWeek]!);
+    days.push(dayNames[dayOfWeek]);
   }
 
   return days;
@@ -94,13 +87,13 @@ export function processData(
     // Initialize grid based on actual day count
     grid = Array(24)
       .fill(null)
-      .map(() => Array(days.length).fill(0));
+      .map(() => Array(days.length).fill(0) as number[]);
   } else {
     // Default to full week starting Monday
     days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
     grid = Array(24)
       .fill(null)
-      .map(() => Array(7).fill(0));
+      .map(() => Array(7).fill(0) as number[]);
   }
 
   let totalProcessed = 0;
@@ -125,102 +118,100 @@ export function processData(
   tweets.forEach((tweet) => {
     totalProcessed++;
     const date = tweet.date; // Already parsed as Date object
-    if (date) {
-      validDates++;
+    validDates++;
 
-      // Filter out dates that are more than 1 day in the future
-      // This allows for timezone differences while still filtering obvious errors
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setTime(tomorrow.getTime() + 24 * 60 * 60 * 1000);
-      if (date > tomorrow) {
+    // Filter out dates that are more than 1 day in the future
+    // This allows for timezone differences while still filtering obvious errors
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setTime(tomorrow.getTime() + 24 * 60 * 60 * 1000);
+    if (date > tomorrow) {
+      filteredOut++;
+      return;
+    }
+
+    // Apply date range and noon filtering
+    if (actualStart && actualEnd && startDateStr && endDateStr) {
+      // Create date strings for comparison (YYYY-MM-DD format)
+      const tweetET = getETComponents(date);
+      const tweetYear = tweetET.year;
+      const tweetMonth = String(tweetET.month + 1).padStart(2, '0');
+      const tweetDay = String(tweetET.day).padStart(2, '0');
+      const tweetDateStr = `${tweetYear}-${tweetMonth}-${tweetDay}`;
+      const tweetHour = tweetET.hour;
+
+      // For start date: include only from noon onwards
+      if (tweetDateStr === startDateStr) {
+        if (tweetHour < 12) {
+          noonFiltered++;
+          return;
+        }
+      }
+      // For dates before start date: exclude all
+      else if (tweetDateStr < startDateStr) {
         filteredOut++;
         return;
       }
 
-      // Apply date range and noon filtering
-      if (actualStart && actualEnd && startDateStr && endDateStr) {
-        // Create date strings for comparison (YYYY-MM-DD format)
-        const tweetET = getETComponents(date);
-        const tweetYear = tweetET.year;
-        const tweetMonth = String(tweetET.month + 1).padStart(2, '0');
-        const tweetDay = String(tweetET.day).padStart(2, '0');
-        const tweetDateStr = `${tweetYear}-${tweetMonth}-${tweetDay}`;
-        const tweetHour = tweetET.hour;
-
-        // For start date: include only from noon onwards
-        if (tweetDateStr === startDateStr) {
-          if (tweetHour < 12) {
-            noonFiltered++;
-            return;
-          }
-        }
-        // For dates before start date: exclude all
-        else if (tweetDateStr < startDateStr) {
-          filteredOut++;
-          return;
-        }
-
-        // For end date (Friday): include only before noon
-        if (tweetDateStr === endDateStr) {
-          if (tweetHour >= 12) {
-            noonFiltered++;
-            return;
-          }
-        }
-        // For dates after end date: exclude all
-        else if (tweetDateStr > endDateStr) {
-          filteredOut++;
+      // For end date (Friday): include only before noon
+      if (tweetDateStr === endDateStr) {
+        if (tweetHour >= 12) {
+          noonFiltered++;
           return;
         }
       }
+      // For dates after end date: exclude all
+      else if (tweetDateStr > endDateStr) {
+        filteredOut++;
+        return;
+      }
+    }
 
+    const dateET = getETComponents(date);
+    const hour = dateET.hour;
+
+    if (actualStart && actualEnd) {
+      // Calculate which day column this date falls into
+      // Use ET components for accurate day calculation
+      const tweetET = getETComponents(date);
+      const startET = getETComponents(actualStart);
+
+      // Create YYYY-MM-DD strings for both dates
+      const tweetDateStr = `${tweetET.year}-${String(tweetET.month + 1).padStart(
+        2,
+        '0',
+      )}-${String(tweetET.day).padStart(2, '0')}`;
+      const startDateStr = `${startET.year}-${String(startET.month + 1).padStart(
+        2,
+        '0',
+      )}-${String(startET.day).padStart(2, '0')}`;
+
+      // Create dates at ET noon for accurate day difference
+      const tweetDayNoon = parseETNoonDate(tweetDateStr);
+      const startDayNoon = parseETNoonDate(startDateStr);
+
+      // Adjust to midnight by subtracting 12 hours from noon
+      const tweetDayStart = new Date(tweetDayNoon.getTime() - 12 * 60 * 60 * 1000);
+      const startDayStart = new Date(startDayNoon.getTime() - 12 * 60 * 60 * 1000);
+
+      const daysDiff = Math.floor(
+        (tweetDayStart.getTime() - startDayStart.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      // Allow daysDiff from 0 to 7 (8 days total)
+      if (daysDiff >= 0 && daysDiff < days.length) {
+        grid[hour][daysDiff]++;
+        validTweets++;
+      }
+    } else {
+      // Default behavior - map to day of week
       const dateET = getETComponents(date);
-      const hour = dateET.hour;
+      const dayOfWeek = dateET.dayOfWeek; // 0 = Sunday, 1 = Monday, etc.
+      const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday = 0
 
-      if (actualStart && actualEnd) {
-        // Calculate which day column this date falls into
-        // Use ET components for accurate day calculation
-        const tweetET = getETComponents(date);
-        const startET = getETComponents(actualStart);
-
-        // Create YYYY-MM-DD strings for both dates
-        const tweetDateStr = `${tweetET.year}-${String(tweetET.month + 1).padStart(
-          2,
-          '0',
-        )}-${String(tweetET.day).padStart(2, '0')}`;
-        const startDateStr = `${startET.year}-${String(startET.month + 1).padStart(
-          2,
-          '0',
-        )}-${String(startET.day).padStart(2, '0')}`;
-
-        // Create dates at ET noon for accurate day difference
-        const tweetDayNoon = parseETNoonDate(tweetDateStr);
-        const startDayNoon = parseETNoonDate(startDateStr);
-
-        // Adjust to midnight by subtracting 12 hours from noon
-        const tweetDayStart = new Date(tweetDayNoon.getTime() - 12 * 60 * 60 * 1000);
-        const startDayStart = new Date(startDayNoon.getTime() - 12 * 60 * 60 * 1000);
-
-        const daysDiff = Math.floor(
-          (tweetDayStart.getTime() - startDayStart.getTime()) / (1000 * 60 * 60 * 24),
-        );
-
-        // Allow daysDiff from 0 to 7 (8 days total)
-        if (daysDiff >= 0 && daysDiff < days.length) {
-          grid[hour]![daysDiff]!++;
-          validTweets++;
-        }
-      } else {
-        // Default behavior - map to day of week
-        const dateET = getETComponents(date);
-        const dayOfWeek = dateET.dayOfWeek; // 0 = Sunday, 1 = Monday, etc.
-        const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday = 0
-
-        if (adjustedDay >= 0 && adjustedDay < days.length) {
-          grid[hour]![adjustedDay]!++;
-          validTweets++;
-        }
+      if (adjustedDay >= 0 && adjustedDay < days.length) {
+        grid[hour][adjustedDay]++;
+        validTweets++;
       }
     }
   });
@@ -232,7 +223,7 @@ export function processData(
       // Skip disabled cells based on noon rules
       if (dayIndex === 0 && hourIndex < 12) continue; // First Friday before noon
       if (dayIndex === days.length - 1 && hourIndex >= 12) continue; // Last Friday from noon
-      total += grid[hourIndex]![dayIndex]!;
+      total += grid[hourIndex][dayIndex];
     }
     return total;
   });
@@ -241,7 +232,7 @@ export function processData(
   const peakHourIndex = grid.findIndex((row) => row.includes(maxValue));
   const peakHour = formatHour(peakHourIndex);
   const mostActiveDayIndex = totals.indexOf(Math.max(...totals));
-  const mostActiveDay = days[mostActiveDayIndex]!;
+  const mostActiveDay = days[mostActiveDayIndex];
 
   // Debug logging
   debugLog('=== PROCESSING SUMMARY ===');
@@ -382,7 +373,7 @@ export function calculateStatistics(data: HeatmapData) {
   const { grid, totals } = data;
 
   // Calculate hourly average
-  const hourlyTotals = Array(HOURS_IN_DAY).fill(0);
+  const hourlyTotals: number[] = Array(HOURS_IN_DAY).fill(0) as number[];
   for (let hour = 0; hour < HOURS_IN_DAY; hour++) {
     for (let day = 0; day < DAYS_IN_WEEK; day++) {
       if (!isCellDisabled(day, hour)) {

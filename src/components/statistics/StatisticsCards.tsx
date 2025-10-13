@@ -11,9 +11,7 @@ export const StatisticsCards: React.FC = () => {
   const lastTweetInfo = React.useMemo(() => {
     if (rawTweets.length === 0) return null;
     const sortedTweets = [...rawTweets].sort((a, b) => b.date.getTime() - a.date.getTime());
-    const lastTweet = sortedTweets[0]?.date;
-
-    if (!lastTweet) return null;
+    const lastTweet = sortedTweets[0].date; // No optional chaining needed since we checked length
 
     const now = new Date();
     const diffMs = now.getTime() - lastTweet.getTime();
@@ -25,11 +23,11 @@ export const StatisticsCards: React.FC = () => {
     if (diffMinutes < 1) {
       timeAgo = 'Just now';
     } else if (diffMinutes < 60) {
-      timeAgo = `${diffMinutes}m ago`;
+      timeAgo = `${String(diffMinutes)}m ago`;
     } else if (diffHours < 24) {
-      timeAgo = `${diffHours}h ago`;
+      timeAgo = `${String(diffHours)}h ago`;
     } else if (diffDays < 7) {
-      timeAgo = `${diffDays}d ago`;
+      timeAgo = `${String(diffDays)}d ago`;
     } else {
       // Show actual date for older tweets
       const etComponents = getETComponents(lastTweet);
@@ -47,7 +45,7 @@ export const StatisticsCards: React.FC = () => {
         'Nov',
         'Dec',
       ];
-      timeAgo = `${monthNames[etComponents.month]} ${etComponents.day}`;
+      timeAgo = `${monthNames[etComponents.month]} ${String(etComponents.day)}`;
     }
 
     // Format date with time (month day, hour:minute AM/PM)

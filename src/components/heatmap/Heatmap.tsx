@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { HeatmapData } from '@/types';
-import { getETComponents } from '@/utils/dateTime';
 import { getHeatmapCellClasses } from '@/utils/heatmapStyles';
 import { isMobileDevice } from '@/utils/mobile';
 import { isCellDisabled, isCurrentHour, isFutureTime } from '@/utils/processor';
@@ -28,7 +27,6 @@ export const Heatmap: React.FC<HeatmapProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
-  const [hoveredCell, setHoveredCell] = useState<{ day: number; hour: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const { loadData } = useAppStore();
 
@@ -102,7 +100,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({
     );
   }
 
-  const { grid, hours, days, totals, maxValue, dateRange } = data;
+  const { grid, hours, days, totals, dateRange } = data;
   const now = new Date();
 
   return (
@@ -202,10 +200,16 @@ export const Heatmap: React.FC<HeatmapProps> = ({
                           key={dayIndex}
                           className={cellClasses}
                           data-value={value}
-                          onMouseEnter={() =>
-                            !isMobile && setHoveredCell({ day: dayIndex, hour: hourIndex })
-                          }
-                          onMouseLeave={() => !isMobile && setHoveredCell(null)}
+                          onMouseEnter={() => {
+                            if (!isMobile) {
+                              // Hover effect handled by CSS
+                            }
+                          }}
+                          onMouseLeave={() => {
+                            if (!isMobile) {
+                              // Hover effect handled by CSS
+                            }
+                          }}
                         >
                           <span
                             className={cn(

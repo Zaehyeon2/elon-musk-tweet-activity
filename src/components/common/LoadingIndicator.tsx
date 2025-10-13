@@ -56,7 +56,7 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
                         : 'h-5 w-5',
                   'animate-pulse',
                 )}
-                style={{ animationDelay: `${i * 150}ms` }}
+                style={{ animationDelay: `${String(i * 150)}ms` }}
               />
             ))}
           </div>
@@ -104,7 +104,7 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
             <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <div
                 className="h-full bg-blue-600 dark:bg-blue-400 transition-all duration-300 ease-out"
-                style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+                style={{ width: `${String(Math.min(100, Math.max(0, progress)))}%` }}
               />
             </div>
             <div className="text-xs mt-1">{Math.round(progress)}%</div>

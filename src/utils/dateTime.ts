@@ -43,7 +43,6 @@ export function parseTwitterDate(dateStr: string): Date | null {
   try {
     let cleanDate = dateStr.trim();
     const isEDT = cleanDate.includes(' EDT');
-    const isEST = cleanDate.includes(' EST');
 
     // Remove timezone suffix
     cleanDate = cleanDate.replace(' EDT', '').replace(' EST', '');
@@ -54,7 +53,7 @@ export function parseTwitterDate(dateStr: string): Date | null {
       if (parts.length >= 2) {
         const nowET = getETComponents(new Date());
         const currentYear = nowET.year;
-        cleanDate = parts[0] + ', ' + currentYear + ', ' + parts.slice(1).join(', ');
+        cleanDate = parts[0] + ', ' + String(currentYear) + ', ' + parts.slice(1).join(', ');
       }
     }
 
@@ -127,7 +126,7 @@ export function parseTwitterDate(dateStr: string): Date | null {
       debugLog('parseTwitterDate:', {
         input: dateStr,
         parsed: cleanDate,
-        isEDT,
+        isEDT: dateStr.includes(' EDT'),
         components: { year, month, day, hour, minute, second, ampm },
         utcDate: utcDate.toISOString(),
         etCheck: getETComponents(utcDate),
@@ -223,7 +222,7 @@ export function createETNoonDate(year: number, month: number, day: number): Date
  */
 export function parseETNoonDate(dateString: string): Date {
   const [year, month, day] = dateString.split('-').map(Number);
-  return createETNoonDate(year ?? 0, month ?? 0, day ?? 0);
+  return createETNoonDate(year, month, day);
 }
 
 /**

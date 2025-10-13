@@ -5,7 +5,7 @@
 
 import { debugLog } from '@/config/constants';
 import { Tweet } from '@/types';
-import { getETComponents, parseETNoonDate, parseTwitterDate } from '@/utils/dateTime';
+import { getETComponents, parseETNoonDate } from '@/utils/dateTime';
 
 export interface WeekRange {
   value: string;
@@ -22,16 +22,13 @@ export interface WeekRange {
  * Supports both Friday-to-Friday and Tuesday-to-Tuesday patterns
  */
 export function generateWeekRanges(tweets: Tweet[]): WeekRange[] {
-  if (!tweets || tweets.length === 0) return [];
+  if (tweets.length === 0) return [];
 
   const startTime = performance.now();
   const ranges: WeekRange[] = [];
 
   // Get date range from tweets
-  const dates = tweets
-    .map((tweet) => tweet.date)
-    .filter((date) => date)
-    .sort((a, b) => a.getTime() - b.getTime());
+  const dates = tweets.map((tweet) => tweet.date).sort((a, b) => a.getTime() - b.getTime());
 
   if (dates.length === 0) return [];
 
@@ -52,16 +49,10 @@ export function generateWeekRanges(tweets: Tweet[]): WeekRange[] {
   const allRanges: Array<{ start: Date; end: Date; type: 'friday' | 'tuesday' }> = [];
 
   // Process friday ranges
-  const fridayStart = fridayRange?.start;
-  if (fridayStart instanceof Date) {
-    allRanges.push(...generateRangesForDay(fridayStart as Date, minDate, maxDate, 'friday'));
-  }
+  allRanges.push(...generateRangesForDay(fridayRange.start, minDate, maxDate, 'friday'));
 
   // Process tuesday ranges
-  const tuesdayStart = tuesdayRange?.start;
-  if (tuesdayStart instanceof Date) {
-    allRanges.push(...generateRangesForDay(tuesdayStart as Date, minDate, maxDate, 'tuesday'));
-  }
+  allRanges.push(...generateRangesForDay(tuesdayRange.start, minDate, maxDate, 'tuesday'));
 
   // Filter and format ranges
   allRanges

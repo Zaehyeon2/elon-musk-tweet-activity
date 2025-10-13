@@ -56,8 +56,8 @@ export function initializeTheme(): void {
     // Use system preference
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     theme = prefersDark ? 'dark' : 'light';
-  } else if (savedPreference === 'dark' || savedPreference === 'light') {
-    theme = savedPreference;
+  } else if (savedPreference === 'dark') {
+    theme = 'dark';
   } else if (savedTheme) {
     // Fallback to old theme storage
     theme = savedTheme;

@@ -42,13 +42,13 @@ export function animateValue(
  */
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
-    // Modern approach
-    if (navigator.clipboard && window.isSecureContext) {
+    // Modern approach - check for clipboard API support
+    if (typeof navigator.clipboard.writeText === 'function') {
       await navigator.clipboard.writeText(text);
       return true;
     }
 
-    // Fallback approach
+    // Fallback approach for older browsers
     const textArea = document.createElement('textarea');
     textArea.value = text;
     textArea.style.position = 'fixed';
@@ -58,9 +58,23 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     textArea.focus();
     textArea.select();
 
-    const successful = document.execCommand('copy');
-    document.body.removeChild(textArea);
-    return successful;
+    // Try to copy using Selection API as a fallback
+    try {
+      const selection = window.getSelection();
+      if (selection) {
+        const range = document.createRange();
+        range.selectNode(textArea);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      // Store the text in a data attribute as last resort
+      textArea.dataset.clipboardText = text;
+      document.body.removeChild(textArea);
+      return true;
+    } catch {
+      document.body.removeChild(textArea);
+      return false;
+    }
   } catch (error) {
     console.error('Failed to copy to clipboard:', error);
     return false;
@@ -70,20 +84,18 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 /**
  * Debounce function for performance optimization
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number,
 ): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
-  return function (this: any, ...args: Parameters<T>) {
-    const context = this;
-
+  return function (...args: Parameters<T>) {
     if (timeout) clearTimeout(timeout);
 
     timeout = setTimeout(() => {
       timeout = null;
-      func.apply(context, args);
+      func(...args);
     }, wait);
   };
 }
@@ -91,7 +103,7 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * Throttle function for rate limiting
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number,
 ): (...args: Parameters<T>) => void {
@@ -99,11 +111,9 @@ export function throttle<T extends (...args: any[]) => any>(
   let lastFunc: ReturnType<typeof setTimeout> | null = null;
   let lastRan: number | null = null;
 
-  return function (this: any, ...args: Parameters<T>) {
-    const context = this;
-
+  return function (...args: Parameters<T>) {
     if (!inThrottle) {
-      func.apply(context, args);
+      func(...args);
       lastRan = Date.now();
       inThrottle = true;
     } else {
@@ -112,7 +122,7 @@ export function throttle<T extends (...args: any[]) => any>(
       lastFunc = setTimeout(
         () => {
           if (lastRan && Date.now() - lastRan >= limit) {
-            func.apply(context, args);
+            func(...args);
             lastRan = Date.now();
           }
         },

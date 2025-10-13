@@ -11,7 +11,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAppStore } from '@/store/useAppStore';
-import { DateRange } from '@/types';
 
 export const Header: React.FC = () => {
   const {
