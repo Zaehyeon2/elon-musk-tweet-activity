@@ -105,8 +105,7 @@ export const StatisticsCards: React.FC = () => {
             </div>
             <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap overflow-hidden text-ellipsis">
               {lastRefreshTime
-                ? lastRefreshTime.toLocaleTimeString('en-US', {
-                    timeZone: 'America/New_York',
+                ? lastRefreshTime.toLocaleTimeString(undefined, {
                     hour: 'numeric',
                     minute: '2-digit',
                     second: '2-digit',
