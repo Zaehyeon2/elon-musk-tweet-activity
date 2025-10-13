@@ -125,7 +125,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({
           <div ref={containerRef} className="overflow-hidden" onScroll={handleScroll}>
             <table ref={tableRef} className="w-full border-collapse table-fixed">
               <colgroup>
-                <col className="w-10 sm:w-14" />
+                <col className="w-12 sm:w-16 md:w-14" />
                 {days.map((_, i) => (
                   <col key={i} className="w-auto" />
                 ))}
@@ -134,11 +134,11 @@ export const Heatmap: React.FC<HeatmapProps> = ({
               {/* Header row with day labels */}
               <thead>
                 <tr>
-                  <th className="h-5 sm:h-6 md:h-7 p-0 bg-transparent border-b border-r border-gray-200 dark:border-gray-700" />
+                  <th className="h-7 sm:h-8 md:h-7 p-0 bg-transparent border-b border-r border-gray-200 dark:border-gray-700" />
                   {days.map((day, i) => (
                     <th
                       key={i}
-                      className="h-5 sm:h-6 md:h-7 p-0 bg-transparent text-[8px] sm:text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-300 text-center border-b border-r border-gray-200 dark:border-gray-700 last:border-r-0"
+                      className="h-7 sm:h-8 md:h-7 p-0 bg-transparent text-[10px] sm:text-xs md:text-xs font-bold text-gray-700 dark:text-gray-300 text-center border-b border-r border-gray-200 dark:border-gray-700 last:border-r-0"
                     >
                       {day}
                     </th>
@@ -151,7 +151,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({
                 {hours.map((hour, hourIndex) => (
                   <tr key={hourIndex}>
                     {/* Hour label */}
-                    <td className="h-5 sm:h-6 md:h-7 p-0 bg-transparent text-[8px] sm:text-[10px] md:text-xs font-bold text-gray-600 dark:text-gray-400 text-center border-r border-gray-200 dark:border-gray-700">
+                    <td className="h-7 sm:h-8 md:h-7 px-1 sm:px-1 md:px-0 bg-transparent text-[10px] sm:text-xs md:text-xs font-bold text-gray-600 dark:text-gray-400 text-center border-r border-gray-200 dark:border-gray-700">
                       {hour}
                     </td>
 
@@ -178,7 +178,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({
                         : 'border border-gray-200 dark:border-gray-700'; // Full border for active and future cells
 
                       const cellClasses = cn(
-                        'heatmap-cell h-5 sm:h-6 md:h-7 p-0 relative',
+                        'heatmap-cell h-7 sm:h-8 md:h-7 p-0 relative',
                         borderClasses,
                         cellColor,
                         currentHourClasses,
@@ -198,7 +198,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({
                         >
                           <span
                             className={cn(
-                              'absolute inset-0 flex items-center justify-center text-[7px] sm:text-[9px] md:text-[11px] font-semibold overflow-hidden pointer-events-none',
+                              'absolute inset-0 flex items-center justify-center text-[10px] sm:text-[11px] md:text-[11px] font-semibold overflow-hidden pointer-events-none',
                               textColor,
                             )}
                           >
@@ -212,13 +212,13 @@ export const Heatmap: React.FC<HeatmapProps> = ({
 
                 {/* Totals row */}
                 <tr>
-                  <td className="h-6 sm:h-7 md:h-8 p-0 bg-transparent text-[8px] sm:text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-300 text-center border-t border-r border-gray-200 dark:border-gray-700">
+                  <td className="h-8 sm:h-9 md:h-8 px-1 sm:px-1 md:px-0 bg-transparent text-[10px] sm:text-xs md:text-xs font-bold text-gray-700 dark:text-gray-300 text-center border-t border-r border-gray-200 dark:border-gray-700">
                     {type === 'average' ? 'AVG' : 'TOTALS'}
                   </td>
                   {totals.map((total, i) => (
                     <td
                       key={i}
-                      className="h-6 sm:h-7 md:h-8 p-0 bg-transparent text-[8px] sm:text-[10px] md:text-xs font-bold text-gray-900 dark:text-gray-100 text-center border border-gray-200 dark:border-gray-700"
+                      className="h-8 sm:h-9 md:h-8 p-0 bg-transparent text-[10px] sm:text-xs md:text-xs font-bold text-gray-900 dark:text-gray-100 text-center border border-gray-200 dark:border-gray-700"
                     >
                       {type === 'average' && typeof total === 'number' ? total.toFixed(1) : total}
                     </td>
@@ -232,15 +232,15 @@ export const Heatmap: React.FC<HeatmapProps> = ({
         {/* Color scale legend - GitHub-like contribution graph */}
         <div className="mt-4 px-4 sm:px-0">
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <span>Less</span>
+            <span className="text-[11px] sm:text-xs">Less</span>
             <div className="flex gap-1">
-              <div className="w-4 h-4 bg-muted border border-border rounded-sm" />
-              <div className="w-4 h-4 bg-green-300 dark:bg-green-700 border border-border rounded-sm" />
-              <div className="w-4 h-4 bg-green-400 dark:bg-green-600 border border-border rounded-sm" />
-              <div className="w-4 h-4 bg-green-500 dark:bg-green-500 border border-border rounded-sm" />
-              <div className="w-4 h-4 bg-green-600 dark:bg-green-400 border border-border rounded-sm" />
+              <div className="w-5 h-5 sm:w-4 sm:h-4 bg-muted border border-border rounded-sm" />
+              <div className="w-5 h-5 sm:w-4 sm:h-4 bg-green-300 dark:bg-green-700 border border-border rounded-sm" />
+              <div className="w-5 h-5 sm:w-4 sm:h-4 bg-green-400 dark:bg-green-600 border border-border rounded-sm" />
+              <div className="w-5 h-5 sm:w-4 sm:h-4 bg-green-500 dark:bg-green-500 border border-border rounded-sm" />
+              <div className="w-5 h-5 sm:w-4 sm:h-4 bg-green-600 dark:bg-green-400 border border-border rounded-sm" />
             </div>
-            <span>More</span>
+            <span className="text-[11px] sm:text-xs">More</span>
           </div>
         </div>
       </CardContent>
