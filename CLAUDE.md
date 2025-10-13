@@ -9,24 +9,28 @@
 The migration from vanilla JavaScript to React + TypeScript brings significant benefits:
 
 **Type Safety**
+
 - ✅ Compile-time error detection
 - ✅ Better IDE autocomplete and IntelliSense
 - ✅ Refactoring confidence with type checking
 - ✅ Self-documenting code with interfaces
 
 **Developer Experience**
+
 - ✅ Hot Module Replacement (HMR) for instant feedback
 - ✅ React DevTools for component debugging
 - ✅ Zustand DevTools for state debugging
 - ✅ Modern tooling (Vite, ESLint, Prettier)
 
 **Code Organization**
+
 - ✅ Component-based architecture (easier to test and maintain)
 - ✅ Custom hooks for reusable logic
 - ✅ Declarative UI (React) vs imperative DOM manipulation
 - ✅ Better separation of concerns
 
 **Performance**
+
 - ✅ React's optimized rendering (Virtual DOM)
 - ✅ Vite's fast build times (ESBuild)
 - ✅ Tree-shaking and code splitting built-in
@@ -34,36 +38,36 @@ The migration from vanilla JavaScript to React + TypeScript brings significant b
 
 ### Key Architectural Changes
 
-| Aspect | Vanilla JS (OLD) | React + TypeScript (NEW) |
-|--------|------------------|--------------------------|
-| **State Management** | Global `appState` object | Zustand store with hooks |
-| **UI Updates** | Manual DOM manipulation | Automatic React re-renders |
-| **Type Safety** | JSDoc comments (optional) | TypeScript interfaces (enforced) |
-| **Styling** | Tailwind classes | Tailwind + shadcn/ui components |
-| **Dev Server** | Simple HTTP server | Vite with HMR |
-| **File Extensions** | `.js` | `.ts`, `.tsx` |
-| **Module System** | ES6 modules | ES6 + TypeScript paths (@/) |
-| **Build Process** | None (direct browser) | Vite build (optimized bundle) |
+| Aspect               | Vanilla JS (OLD)          | React + TypeScript (NEW)         |
+| -------------------- | ------------------------- | -------------------------------- |
+| **State Management** | Global `appState` object  | Zustand store with hooks         |
+| **UI Updates**       | Manual DOM manipulation   | Automatic React re-renders       |
+| **Type Safety**      | JSDoc comments (optional) | TypeScript interfaces (enforced) |
+| **Styling**          | Tailwind classes          | Tailwind + shadcn/ui components  |
+| **Dev Server**       | Simple HTTP server        | Vite with HMR                    |
+| **File Extensions**  | `.js`                     | `.ts`, `.tsx`                    |
+| **Module System**    | ES6 modules               | ES6 + TypeScript paths (@/)      |
+| **Build Process**    | None (direct browser)     | Vite build (optimized bundle)    |
 
 ### Migration Mapping
 
 Here's how vanilla JS modules map to React components/utilities:
 
-| Vanilla JS | React + TypeScript |
-|------------|-------------------|
-| `src/config/constants.js` | `config/constants.ts` |
-| `src/utils/dateTime.js` | `utils/dateTime.ts` |
-| `src/utils/performance.js` | `utils/performance.ts` |
-| `src/services/api.js` | `services/api.ts` |
-| `src/data/parser.js` | `utils/parser.ts` |
-| `src/data/processor.js` | `utils/processor.ts` |
-| `src/data/analytics.js` | `utils/analytics.ts` |
-| `src/state/appState.js` | `store/useAppStore.ts` (Zustand) |
-| `src/ui/components.js` | `components/common/*.tsx` |
-| `src/ui/heatmap.js` | `components/heatmap/Heatmap.tsx` |
-| `src/ui/controls.js` | `components/layout/Header.tsx` |
-| `src/ui/theme.js` | `hooks/useTheme.ts` + `components/ui/theme-toggle.tsx` |
-| `src/main/app.js` | `App.tsx` + `main.tsx` + custom hooks |
+| Vanilla JS                 | React + TypeScript                                     |
+| -------------------------- | ------------------------------------------------------ |
+| `src/config/constants.js`  | `config/constants.ts`                                  |
+| `src/utils/dateTime.js`    | `utils/dateTime.ts`                                    |
+| `src/utils/performance.js` | `utils/performance.ts`                                 |
+| `src/services/api.js`      | `services/api.ts`                                      |
+| `src/data/parser.js`       | `utils/parser.ts`                                      |
+| `src/data/processor.js`    | `utils/processor.ts`                                   |
+| `src/data/analytics.js`    | `utils/analytics.ts`                                   |
+| `src/state/appState.js`    | `store/useAppStore.ts` (Zustand)                       |
+| `src/ui/components.js`     | `components/common/*.tsx`                              |
+| `src/ui/heatmap.js`        | `components/heatmap/Heatmap.tsx`                       |
+| `src/ui/controls.js`       | `components/layout/Header.tsx`                         |
+| `src/ui/theme.js`          | `hooks/useTheme.ts` + `components/ui/theme-toggle.tsx` |
+| `src/main/app.js`          | `App.tsx` + `main.tsx` + custom hooks                  |
 
 ### What Stayed the Same
 
@@ -79,6 +83,7 @@ These core logic modules were migrated with minimal changes (just TypeScript typ
 ### What Changed Significantly
 
 **State Management**
+
 ```javascript
 // OLD - Vanilla JS
 import { appState } from './state/appState.js';
@@ -92,6 +97,7 @@ const { currentData, setDateRange } = useAppStore();
 ```
 
 **UI Rendering**
+
 ```javascript
 // OLD - Vanilla JS (Imperative)
 function renderHeatmap(data) {
@@ -129,6 +135,7 @@ function Heatmap({ data }: { data: HeatmapData | null }) {
 ## Technology Stack
 
 ### Core Technologies
+
 - **React 19.1** - Latest React with concurrent features
 - **TypeScript 5.8** - Type-safe development
 - **Vite 7.1** - Fast build tool and dev server
@@ -138,6 +145,7 @@ function Heatmap({ data }: { data: HeatmapData | null }) {
 - **TanStack Query 5.90** - Server state management (optional/future use)
 
 ### Supporting Libraries
+
 - **date-fns 4.1** - Date manipulation utilities
 - **PapaParse 5.5** - CSV parsing
 - **Axios 1.12** - HTTP client
@@ -209,6 +217,7 @@ react-app/src/
 ### Key Architectural Changes from Vanilla JS
 
 #### 1. State Management: Zustand (replaces `state/appState.js`)
+
 - **File**: `store/useAppStore.ts`
 - **Features**:
   - Centralized global state with TypeScript support
@@ -217,6 +226,7 @@ react-app/src/
   - State: rawTweets, currentData, avgData, predictions, selectedRange, isLoading, error, etc.
 
 **Migration Note**: Instead of importing/modifying a global `appState` object, you now use:
+
 ```typescript
 // Vanilla JS (OLD)
 import { appState } from './state/appState.js';
@@ -228,10 +238,12 @@ const { currentData, setCurrentData } = useAppStore();
 ```
 
 #### 2. Component-Based UI (replaces `ui/` modules)
+
 - **Vanilla JS**: Imperative DOM manipulation with `renderHeatmap()`, `renderControls()`, etc.
 - **React**: Declarative components like `<Heatmap />`, `<Header />`, `<StatisticsCards />`
 
 **Migration Note**: UI updates are now automatic via React's reactivity:
+
 ```typescript
 // Vanilla JS (OLD)
 function updateHeatmap(data) {
@@ -250,12 +262,14 @@ function Heatmap({ data }: { data: HeatmapData | null }) {
 ```
 
 #### 3. Custom Hooks (replaces initialization logic)
+
 - **`useInitialLoad`**: Replaces `main/app.js` initialization
 - **`useAutoRefresh`**: Replaces auto-refresh timer logic
 - **`useTheme`**: Replaces `ui/theme.js`
 - **`usePerformance`**: Performance monitoring hook
 
 #### 4. TypeScript Types (replaces JSDoc comments)
+
 - **File**: `types/index.ts`
 - Defines interfaces for `Tweet`, `HeatmapData`, `PredictionData`, `DateRange`, `AppState`, etc.
 - Compile-time type checking replaces runtime errors
@@ -263,12 +277,14 @@ function Heatmap({ data }: { data: HeatmapData | null }) {
 ### Module Responsibilities (React Version)
 
 #### `config/constants.ts`
+
 - All application constants (thresholds, intervals, weights)
 - Debug mode flag (`DEBUG_MODE`)
 - Centralized `debugLog` function
 - **When to modify**: Adding new configuration values, changing thresholds
 
 #### `utils/dateTime.ts`
+
 - ET (Eastern Time) timezone handling
 - Date parsing and formatting
 - ET component extraction (`getETComponents()`)
@@ -276,24 +292,28 @@ function Heatmap({ data }: { data: HeatmapData | null }) {
 - **When to modify**: Date/time logic changes, timezone handling updates
 
 #### `utils/performance.ts`
+
 - Memoization utilities
 - Debounce/throttle functions
 - Performance optimization helpers
 - **When to modify**: Adding performance optimizations
 
 #### `services/api.ts`
+
 - X Tracker API communication
 - CORS proxy handling with fallbacks
 - Network error handling
 - **When to modify**: API endpoint changes, new data sources
 
 #### `utils/parser.ts`
+
 - CSV file parsing (using PapaParse)
 - Tweet data extraction from CSV
 - Year inference for tweets without year
 - **When to modify**: CSV format changes, parsing logic improvements
 
 #### `utils/processor.ts`
+
 - Raw tweet data → heatmap grid transformation
 - Day label generation
 - Date range filtering
@@ -301,12 +321,14 @@ function Heatmap({ data }: { data: HeatmapData | null }) {
 - **When to modify**: Heatmap structure changes, filtering logic
 
 #### `utils/analytics.ts`
+
 - Prediction calculations (Current Pace, Next 24h, End of Range)
 - 4-week average computation
 - Trend analysis (up/stable/down)
 - **When to modify**: New prediction models, analytics features
 
 #### `store/useAppStore.ts`
+
 - Global state management (Zustand)
 - Current data storage
 - Raw tweets caching
@@ -314,11 +336,13 @@ function Heatmap({ data }: { data: HeatmapData | null }) {
 - **When to modify**: Adding new global state or actions
 
 #### `components/common/`
+
 - Reusable UI components (ErrorMessage, LoadingSpinner, InfoBadge)
 - Type-safe props with TypeScript
 - **When to modify**: Adding new reusable components
 
 #### `components/heatmap/Heatmap.tsx`
+
 - Heatmap table rendering
 - Color scale application
 - Current time highlighting
@@ -326,6 +350,7 @@ function Heatmap({ data }: { data: HeatmapData | null }) {
 - **When to modify**: Heatmap visual changes
 
 #### `components/layout/Header.tsx`
+
 - Date range dropdown
 - Auto-refresh toggle
 - CSV download/upload buttons
@@ -333,11 +358,13 @@ function Heatmap({ data }: { data: HeatmapData | null }) {
 - **When to modify**: Control panel features
 
 #### `hooks/useTheme.ts`
+
 - Dark/light mode toggle logic
 - Theme persistence to localStorage
 - **When to modify**: Theme-related features
 
 #### `App.tsx`
+
 - Main application component
 - Component composition
 - Error boundaries (future)
@@ -386,6 +413,7 @@ export function calculatePredictions(currentData: HeatmapData, avgData: HeatmapD
 #### Example: Adding a New Prediction Type
 
 1. **Add types** to `types/index.ts`:
+
    ```typescript
    export interface PredictionData {
      currentPace: number;
@@ -396,22 +424,22 @@ export function calculatePredictions(currentData: HeatmapData, avgData: HeatmapD
    ```
 
 2. **Add constants** to `config/constants.ts`:
+
    ```typescript
    export const NEW_PREDICTION_WEIGHT = 0.5;
    ```
 
 3. **Add calculation logic** to `utils/analytics.ts`:
+
    ```typescript
-   export function calculateNewPrediction(
-     currentData: HeatmapData,
-     avgData: HeatmapData
-   ): number {
+   export function calculateNewPrediction(currentData: HeatmapData, avgData: HeatmapData): number {
      // Calculation logic
      return result;
    }
    ```
 
 4. **Update Zustand store** to include new prediction:
+
    ```typescript
    // store/useAppStore.ts
    const predictions = calculatePredictions(currentData, avgData);
@@ -420,6 +448,7 @@ export function calculatePredictions(currentData: HeatmapData, avgData: HeatmapD
    ```
 
 5. **Create/update UI component**:
+
    ```typescript
    // components/statistics/PredictionsCard.tsx
    export function PredictionsCard() {
@@ -440,12 +469,14 @@ export function calculatePredictions(currentData: HeatmapData, avgData: HeatmapD
 **IMPORTANT**: This application uses Tailwind CSS. Always use Tailwind utility classes instead of inline styles or custom CSS.
 
 #### Key Principles:
+
 1. **Use Tailwind classes for all styling** - Don't add custom CSS unless absolutely necessary
 2. **Use responsive prefixes** - `sm:`, `md:`, `lg:`, `xl:` for responsive design
 3. **Use dark mode variants** - `dark:` prefix for dark mode styling
 4. **Avoid !important** - Use Tailwind's utility classes which have proper specificity
 
 #### Common Patterns:
+
 ```html
 <!-- CORRECT - Using Tailwind classes -->
 <span class="text-[9px] sm:text-[11px]">Text</span>
@@ -455,11 +486,14 @@ export function calculatePredictions(currentData: HeatmapData, avgData: HeatmapD
 
 <!-- WRONG - Using custom CSS -->
 <style>
-  .custom-text { font-size: 11px; }
+  .custom-text {
+    font-size: 11px;
+  }
 </style>
 ```
 
 #### Responsive Text Sizes:
+
 - Mobile: `text-[9px]`
 - Tablet/Desktop: `sm:text-[11px]`
 
@@ -489,6 +523,7 @@ export function calculatePredictions(currentData: HeatmapData, avgData: HeatmapD
    - Check contrast and readability
 
 #### Common Areas to Check:
+
 - Header (title, buttons, dropdown)
 - Statistics/Indicators section
 - Predictions section
@@ -517,11 +552,11 @@ const hour = etComponents.hour;
 const day = etComponents.day;
 
 // WRONG - Never use these directly
-const dayOfWeek = date.getDay();        // ❌ Returns local timezone
-const hour = date.getHours();           // ❌ Returns local timezone
-const day = date.getDate();             // ❌ Returns local timezone
-const month = date.getMonth();          // ❌ Returns local timezone
-const year = date.getFullYear();        // ❌ Returns local timezone
+const dayOfWeek = date.getDay(); // ❌ Returns local timezone
+const hour = date.getHours(); // ❌ Returns local timezone
+const day = date.getDate(); // ❌ Returns local timezone
+const month = date.getMonth(); // ❌ Returns local timezone
+const year = date.getFullYear(); // ❌ Returns local timezone
 ```
 
 ### Common Pitfalls to Avoid
@@ -549,6 +584,7 @@ const year = date.getFullYear();        // ❌ Returns local timezone
 ### Testing Checklist
 
 When working from a different timezone (e.g., KST), verify:
+
 - [ ] Current hour highlights the correct cell based on ET time
 - [ ] Day labels match ET days (not local days)
 - [ ] Friday-to-Friday ranges start/end at ET noon
@@ -557,6 +593,7 @@ When working from a different timezone (e.g., KST), verify:
 ### Reference Implementation
 
 The `getETComponents()` function (in `utils/dateTime.js`) returns:
+
 ```javascript
 {
   year: number,      // ET year
@@ -634,12 +671,14 @@ The application uses sophisticated pattern-based predictions that consider time-
 **1. Pattern-Based Next 24h Prediction** (`utils/analytics.ts` → `predictNext24hWithPattern()`)
 
 Instead of using a simple hourly average, this function:
+
 - Iterates through each of the next 24 hours
 - For each hour, retrieves the corresponding 4-week average value for that specific time-of-day and day-of-week
 - Applies a combined factor of trend and momentum
 - Sums all hourly predictions
 
 **Benefits**:
+
 - ✅ Captures time-of-day patterns (morning vs. evening activity)
 - ✅ Automatically reflects day-of-week differences (weekday vs. weekend)
 - ✅ More accurate than flat hourly averages
@@ -647,11 +686,13 @@ Instead of using a simple hourly average, this function:
 **2. Momentum Calculation** (`utils/analytics.ts` → `calculateRecentMomentum()`)
 
 Analyzes the last 6 hours to detect acceleration or deceleration:
+
 ```javascript
 Momentum = (Recent 6h actual) / (Recent 6h expected from 4-week avg)
 ```
 
 **Use cases**:
+
 - Detects sudden spikes or drops in activity
 - Gives more weight to very recent behavior
 - Complements long-term trend factor
@@ -659,6 +700,7 @@ Momentum = (Recent 6h actual) / (Recent 6h expected from 4-week avg)
 **3. Confidence Intervals** (`utils/analytics.ts` → `calculatePredictionConfidence()`)
 
 Provides 90% confidence intervals based on historical variance:
+
 ```javascript
 stdDev = sqrt(variance of 4-week average data)
 margin = stdDev × 1.5 × sqrt(24)  // for 24-hour prediction
@@ -671,11 +713,13 @@ max = prediction + margin
 #### Helper Functions
 
 **`getDayIndexFromStart(time, startDate)`**
+
 - Calculates day index (0-7) relative to range start
 - Handles ET timezone correctly
 - Returns -1 if outside range
 
 **`getGridValue(grid, hour, day)`**
+
 - Safely retrieves grid value with boundary checks
 - Enforces noon boundaries (day 0 hour < 12, day 7 hour >= 12)
 - Returns 0 for invalid cells
@@ -710,14 +754,17 @@ max = prediction + margin
 #### When to Modify Prediction Logic
 
 **Adjusting weights**:
+
 ```typescript
 // In utils/analytics.ts
-const combinedFactor = (momentum * 0.3) + (trendFactor * 0.7);
+const combinedFactor = momentum * 0.3 + trendFactor * 0.7;
 ```
+
 - Increase momentum weight (e.g., 0.4) for more reactivity to recent changes
 - Increase trend weight (e.g., 0.8) for more stability
 
 **Changing momentum window**:
+
 ```typescript
 // In calculatePredictionsInternal()
 const momentum = calculateRecentMomentum(currentData, avgData, now, startDate, 6);
@@ -726,9 +773,10 @@ const momentum = calculateRecentMomentum(currentData, avgData, now, startDate, 6
 ```
 
 **Adjusting confidence intervals**:
+
 ```typescript
 // In calculatePredictionConfidence()
-const margin = predictionStdDev * 1.5;  // Change 1.5 to widen/narrow interval
+const margin = predictionStdDev * 1.5; // Change 1.5 to widen/narrow interval
 ```
 
 #### Debugging Predictions
@@ -740,6 +788,7 @@ export const DEBUG_MODE = true;
 ```
 
 Look for these console logs:
+
 - **Recent Momentum**: Shows last 6h actual vs expected
 - **Next 24h Pattern Prediction**: Details first 6 hours of prediction
 - **End of Range Prediction**: Remaining hours calculation
@@ -750,11 +799,13 @@ Look for these console logs:
 **Issue**: Predictions seem too high/low
 
 **Diagnosis**:
+
 1. Check DEBUG logs for trend factor and momentum
 2. Verify 4-week average data is representative
 3. Confirm date range is correctly parsed
 
 **Fix**:
+
 - Adjust combined factor weights in `utils/analytics.ts`
 - Check for data quality issues (missing tweets, parsing errors)
 - Use Zustand DevTools to inspect state
@@ -762,11 +813,13 @@ Look for these console logs:
 **Issue**: Confidence intervals too wide/narrow
 
 **Diagnosis**:
+
 1. Check standard deviation in DEBUG logs
 2. Examine 4-week data variance
 3. Inspect prediction state in Zustand DevTools
 
 **Fix**:
+
 - Adjust margin multiplier in `calculatePredictionConfidence()` in `utils/analytics.ts`
 - If data is very stable, variance will be low (narrow intervals)
 - If data is volatile, variance will be high (wide intervals)
@@ -799,12 +852,14 @@ The application uses multiple caching layers to optimize performance:
 ### When to Add Caching
 
 ✅ **Good candidates for caching:**
+
 - Repeated date parsing (already implemented)
 - Complex calculations with same inputs
 - API responses (consider TTL)
 - Heatmap color calculations
 
 ❌ **Don't cache:**
+
 - One-time calculations
 - Functions with side effects
 - Current time checks
@@ -830,16 +885,19 @@ const handleScroll = throttle(() => {
 ### React-Specific Performance
 
 **1. Custom Hooks for Performance**
+
 - `usePerformance.ts`: Performance monitoring hook
 - `useRequestAnimationFrame.ts`: RAF-based animations
 - `useScrollIndicators.ts`: Optimized scroll tracking
 
 **2. Zustand Optimizations**
+
 - Minimal re-renders (only subscribing components update)
 - Selective subscription to specific state slices
 - Devtools middleware for debugging without perf impact
 
 **3. React Rendering Optimizations**
+
 - Proper key props in lists
 - Avoid inline function definitions in render
 - Use `useMemo` and `useCallback` where appropriate (sparingly)
@@ -849,12 +907,14 @@ const handleScroll = throttle(() => {
 ### Quick Start
 
 1. **Install dependencies**:
+
    ```bash
    cd react-app
    yarn install
    ```
 
 2. **Start dev server**:
+
    ```bash
    yarn dev
    # Opens at http://localhost:5173 with HMR (Hot Module Replacement)
@@ -867,6 +927,7 @@ const handleScroll = throttle(() => {
    - TypeScript errors show in terminal and browser
 
 5. **Build for production**:
+
    ```bash
    yarn build
    # Output in react-app/dist/
@@ -913,6 +974,7 @@ Before committing changes:
 #### Adding a New Configuration
 
 1. Add to `config/constants.ts`:
+
    ```typescript
    export const MY_NEW_SETTING = 42;
    ```
@@ -925,6 +987,7 @@ Before committing changes:
 #### Adding a New Date Utility
 
 1. Add to `utils/dateTime.ts`:
+
    ```typescript
    export function myDateFunction(date: Date): string {
      const et = getETComponents(date);
@@ -941,6 +1004,7 @@ Before committing changes:
 #### Adding a New React Component
 
 1. Create component file (e.g., `components/common/MyComponent.tsx`):
+
    ```typescript
    import React from 'react';
 
@@ -962,6 +1026,7 @@ Before committing changes:
    ```
 
 2. Use in parent component:
+
    ```typescript
    import { MyComponent } from '@/components/common/MyComponent';
 
@@ -973,19 +1038,18 @@ Before committing changes:
 #### Adding a New Analytics Function
 
 1. Add to `utils/analytics.ts`:
+
    ```typescript
    import type { HeatmapData, DateRange } from '@/types';
 
-   export function calculateMyMetric(
-     currentData: HeatmapData,
-     avgData: HeatmapData
-   ): number {
+   export function calculateMyMetric(currentData: HeatmapData, avgData: HeatmapData): number {
      // Calculation logic (pure function)
      return result;
    }
    ```
 
 2. Use in Zustand store or component:
+
    ```typescript
    // In store/useAppStore.ts
    import { calculateMyMetric } from '@/utils/analytics';
@@ -997,6 +1061,7 @@ Before committing changes:
 #### Adding State to Zustand Store
 
 1. Update `store/useAppStore.ts`:
+
    ```typescript
    // Add to state interface
    interface AppState {
@@ -1017,6 +1082,7 @@ Before committing changes:
    ```
 
 2. Use in component:
+
    ```typescript
    function MyComponent() {
      const { myNewState, setMyNewState } = useAppStore();
@@ -1035,6 +1101,7 @@ Before committing changes:
 ### Debugging Tips
 
 1. **Enable debug mode** for verbose console logs:
+
    ```typescript
    // config/constants.ts
    export const DEBUG_MODE = true;
@@ -1054,6 +1121,7 @@ Before committing changes:
    - View state history and time-travel debug
 
 5. **Inspect date handling**:
+
    ```typescript
    const date = new Date();
    console.log('UTC:', date.toISOString());
@@ -1061,6 +1129,7 @@ Before committing changes:
    ```
 
 6. **TypeScript type checking**:
+
    ```bash
    yarn type-check  # Check types without building
    ```
@@ -1070,9 +1139,10 @@ Before committing changes:
    - Set breakpoints in `.tsx/.ts` files directly
 
 8. **Check Zustand state** via console:
+
    ```typescript
    // In browser console
-   useAppStore.getState()
+   useAppStore.getState();
    ```
 
 9. **Vite HMR debugging**:
@@ -1083,6 +1153,7 @@ Before committing changes:
 ### TypeScript Tips
 
 #### Use Type Imports
+
 ```typescript
 // Prefer this for types
 import type { HeatmapData } from '@/types';
@@ -1092,6 +1163,7 @@ import { HeatmapData } from '@/types';
 ```
 
 #### Avoid `any` Type
+
 ```typescript
 // WRONG
 function processTweets(data: any) { ... }
@@ -1101,14 +1173,10 @@ function processTweets(data: Tweet[]) { ... }
 ```
 
 #### Use Type Guards
+
 ```typescript
 function isHeatmapData(data: unknown): data is HeatmapData {
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    'grid' in data &&
-    'hours' in data
-  );
+  return typeof data === 'object' && data !== null && 'grid' in data && 'hours' in data;
 }
 ```
 
@@ -1119,6 +1187,7 @@ function isHeatmapData(data: unknown): data is HeatmapData {
 **Symptoms**: Day labels don't match data distribution
 
 **Diagnosis**:
+
 1. Enable `DEBUG_MODE` in `config/constants.ts`
 2. Check console for "DATE RANGE DEBUG" logs
 3. Compare `Generated days for range` with expected days
@@ -1130,6 +1199,7 @@ function isHeatmapData(data: unknown): data is HeatmapData {
 **Symptoms**: Blue border doesn't appear on current hour cell
 
 **Diagnosis**:
+
 1. Check current time logic in `components/heatmap/Heatmap.tsx`
 2. Verify it uses `getETComponents()` for current time
 3. Console log current ET hour vs. cell hour
@@ -1141,12 +1211,14 @@ function isHeatmapData(data: unknown): data is HeatmapData {
 **Symptoms**: "Failed to load tweets" error
 
 **Diagnosis**:
+
 1. Check Network tab for CORS errors
 2. Check terminal for Vite/API errors
 3. Try different CORS proxy in `services/api.ts`
 4. Test with manual CSV upload
 
 **Fix**:
+
 - Update proxy URL in `services/api.ts`
 - Use CSV fallback upload feature
 - Check if API endpoint is still valid
@@ -1156,6 +1228,7 @@ function isHeatmapData(data: unknown): data is HeatmapData {
 **Symptoms**: Unrealistic prediction numbers
 
 **Diagnosis**:
+
 1. Check prediction weights in `config/constants.ts`
 2. Verify 4-week average calculation in `utils/analytics.ts`
 3. Console log intermediate calculation steps
@@ -1168,11 +1241,13 @@ function isHeatmapData(data: unknown): data is HeatmapData {
 **Symptoms**: Build fails with type errors
 
 **Diagnosis**:
+
 1. Run `yarn type-check` to see all type errors
 2. Check for missing type imports
 3. Verify interface definitions match usage
 
 **Fix**:
+
 - Add missing type imports: `import type { ... } from '@/types'`
 - Update interface definitions in `types/index.ts`
 - Use proper TypeScript types instead of `any`
@@ -1182,11 +1257,13 @@ function isHeatmapData(data: unknown): data is HeatmapData {
 **Symptoms**: UI doesn't update when state changes
 
 **Diagnosis**:
+
 1. Check if you're using Zustand store correctly
 2. Verify component subscribes to store changes
 3. Use React DevTools to inspect props/state
 
 **Fix**:
+
 ```typescript
 // WRONG - Not subscribing to store
 const store = useAppStore.getState();
@@ -1200,11 +1277,13 @@ const { currentData } = useAppStore();
 **Symptoms**: Changes don't hot-reload
 
 **Diagnosis**:
+
 1. Check terminal for Vite errors
 2. Look for syntax errors in modified files
 3. Check for circular dependencies
 
 **Fix**:
+
 - Refresh browser manually
 - Restart dev server: `yarn dev`
 - Clear Vite cache: `rm -rf node_modules/.vite`

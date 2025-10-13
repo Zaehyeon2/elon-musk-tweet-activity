@@ -18,6 +18,7 @@
 ## ✨ 주요 기능
 
 ### 📊 데이터 시각화
+
 - **실시간 트윗 히트맵**: 요일 × 시간대별 트윗 빈도를 히트맵으로 표현 (24시간 × 8일)
 - **4주 평균 비교**: 현재 주 활동을 최근 4주 이동 평균과 나란히 비교
 - **현재 시간 강조**: 파란색 테두리로 현재 시간(ET) 셀 하이라이트
@@ -25,12 +26,14 @@
 - **반응형 디자인**: 모바일, 태블릿, 데스크톱 모든 화면 크기 최적화
 
 ### 🔮 예측 및 분석
+
 - **⏱️ Current Pace**: 현재 속도 유지 시 범위 종료까지 예상 총 트윗 수
 - **🔮 Next 24h Prediction**: 4주 평균 패턴과 트렌드 기반 다음 24시간 예측
 - **🎯 End of Range**: 현재 데이터 + 남은 시간 예측치 합산
 - **📊 Trend Indicator**: 4주 평균 대비 현재 활동 추세 (↗️ 상승 / → 안정 / ↘️ 하락)
 
 ### ⚙️ 사용자 제어
+
 - **날짜 범위 선택**: 금요일-금요일, 화요일-화요일 범위 (정오 기준)
 - **자동 새로고침**: 60초마다 최신 데이터 자동 갱신 (ON/OFF 토글)
 - **CSV 다운로드**: 현재 히트맵 데이터를 CSV 파일로 내보내기
@@ -41,12 +44,14 @@
 ### 설치 및 실행 (React Version)
 
 1. **저장소 클론**
+
    ```bash
    git clone <repository-url>
    cd elon-musk-tweet-activity/react-app
    ```
 
 2. **의존성 설치**
+
    ```bash
    yarn install
    # 또는
@@ -54,6 +59,7 @@
    ```
 
 3. **개발 서버 실행**
+
    ```bash
    yarn dev
    # 또는
@@ -72,6 +78,7 @@
 ### 레거시 Vanilla JS 버전 (Archived)
 
 레거시 버전을 실행하려면:
+
 ```bash
 cd elon-musk-tweet-activity
 # index.html을 브라우저에서 직접 열거나
@@ -108,6 +115,7 @@ python -m http.server 8000
    - 📤 Upload CSV: API 실패 시 로컬 CSV 파일 업로드
 
 ### UI/UX 특징
+
 - **정보 뱃지 (ℹ️)**: 각 예측 지표에 설명 툴팁 제공
   - 데스크톱: 마우스 호버 시 표시
   - 모바일: 뱃지 탭 시 표시/숨김 (외부 클릭 시 자동 닫힘)
@@ -127,6 +135,7 @@ python -m http.server 8000
 ## 🔧 기술 세부사항
 
 ### 시간대 처리
+
 - **표준 시간대**: ET (Eastern Time, America/New_York)
 - **DST 자동 처리**: EDT/EST 자동 전환 (시스템 시간대 API 사용)
 - **날짜 범위**: 정오(12:00 PM ET) 기준 8일 구간
@@ -134,25 +143,29 @@ python -m http.server 8000
   - 화요일 12:00 PM ~ 다음주 화요일 12:00 PM
 
 ### 색상 스케일
+
 | 레벨 | 트윗 수 | 색상 (Light Mode) | 색상 (Dark Mode) |
-|------|---------|-------------------|------------------|
-| 0 | 0개 | 흰색 | 진한 회색 |
-| 1 | 1-2개 | 연한 녹색 | 진한 녹색 |
-| 2 | 3-4개 | 녹색 | 중간 녹색 |
-| 3 | 5-7개 | 중간 녹색 | 녹색 |
-| 4 | 8-9개 | 진한 녹색 | 연한 녹색 |
-| 5 | 10개+ | 매우 진한 녹색 | 밝은 녹색 |
+| ---- | ------- | ----------------- | ---------------- |
+| 0    | 0개     | 흰색              | 진한 회색        |
+| 1    | 1-2개   | 연한 녹색         | 진한 녹색        |
+| 2    | 3-4개   | 녹색              | 중간 녹색        |
+| 3    | 5-7개   | 중간 녹색         | 녹색             |
+| 4    | 8-9개   | 진한 녹색         | 연한 녹색        |
+| 5    | 10개+   | 매우 진한 녹색    | 밝은 녹색        |
 
 ### 예측 알고리즘 (개선됨 ✨)
 
 #### Current Pace (현재 속도)
+
 현재 속도를 유지할 경우 범위 종료 시점 예상 트윗 수:
+
 ```
 현재 시간당 평균 = 현재까지 총 트윗 수 / 경과 시간
 예상 총합 = 현재 시간당 평균 × 전체 범위 시간
 ```
 
 #### Next 24h Prediction (다음 24시간 예측) - 패턴 기반 🎯
+
 **시간대별 활동 패턴을 활용한 고급 예측**:
 
 ```
@@ -179,12 +192,14 @@ python -m http.server 8000
 **표시 형식**: `55 (45-65)` - 예측값 55, 90% 신뢰 구간 45-65
 
 **핵심 개선점**:
+
 - ✅ 시간대별 활동 패턴 반영 (오전/오후/밤 차이)
 - ✅ 요일별 활동 차이 자동 반영
 - ✅ 최근 6시간 가속/감속 추세 고려
 - ✅ 신뢰 구간 제공으로 불확실성 표시
 
 #### End of Range (범위 종료 시 예상) - 패턴 기반 🎯
+
 현재 데이터 + 남은 각 시간대의 패턴 기반 예측:
 
 ```
@@ -204,6 +219,7 @@ python -m http.server 8000
 **표시 형식**: `420 (380-460)` - 예측값 420, 90% 신뢰 구간 380-460
 
 #### Trend (트렌드 지표)
+
 전체 활동 추세 표시:
 
 ```
@@ -216,6 +232,7 @@ python -m http.server 8000
 **표시 형식**: `⬆️ Up 23%` 또는 `➡️ Stable`
 
 #### Momentum (모멘텀 지표)
+
 최근 활동의 가속/감속 추세:
 
 ```
@@ -231,16 +248,17 @@ Momentum = 최근 6시간 실제 트윗 / 최근 6시간 4주 평균
 
 #### 알고리즘 비교표
 
-| 항목 | 이전 방식 | 개선된 방식 |
-|------|-----------|-------------|
-| **예측 방법** | 단순 시간당 평균 | 시간대별 패턴 기반 |
-| **시간대 패턴** | ❌ 미반영 | ✅ 24시간 패턴 활용 |
-| **요일 패턴** | ❌ 미반영 | ✅ 자동 반영 |
-| **최근 추세** | ❌ 미고려 | ✅ 6시간 Momentum |
-| **신뢰 구간** | ❌ 없음 | ✅ 90% 구간 제공 |
-| **정확도** | 중간 | **높음** ⭐ |
+| 항목            | 이전 방식        | 개선된 방식         |
+| --------------- | ---------------- | ------------------- |
+| **예측 방법**   | 단순 시간당 평균 | 시간대별 패턴 기반  |
+| **시간대 패턴** | ❌ 미반영        | ✅ 24시간 패턴 활용 |
+| **요일 패턴**   | ❌ 미반영        | ✅ 자동 반영        |
+| **최근 추세**   | ❌ 미고려        | ✅ 6시간 Momentum   |
+| **신뢰 구간**   | ❌ 없음          | ✅ 90% 구간 제공    |
+| **정확도**      | 중간             | **높음** ⭐         |
 
 ### 성능 최적화
+
 - **날짜 파싱 캐싱**: LRU 캐시 (최대 1000개)
 - **ET 컴포넌트 캐싱**: 타임스탬프 기반 캐싱
 - **메모이제이션**: 반복 계산 결과 캐싱 (최대 50개)
@@ -250,6 +268,7 @@ Momentum = 최근 6시간 실제 트윗 / 최근 6시간 4주 평균
 - **데이터 로드**: 최근 5주치만 로드 (현재 주 + 4주 평균용)
 
 ### 기술 스택
+
 - **프론트엔드**: React 19.1 + TypeScript 5.8
 - **스타일링**: Tailwind CSS 3.4 + shadcn/ui components
 - **상태 관리**: Zustand 5.0
@@ -259,18 +278,22 @@ Momentum = 최근 6시간 실제 트윗 / 최근 6시간 4주 평균
 ## 🌐 브라우저 호환성
 
 ### 지원 브라우저
+
 - ✅ Chrome/Edge 90+
 - ✅ Firefox 90+
 - ✅ Safari 15+
 - ✅ 모바일 브라우저 (iOS Safari 15+, Chrome Mobile)
 
 ### 요구사항
+
 - JavaScript 활성화 필수
 - Modern browser with ES2020+ support
 - React 19 requires modern browsers (no IE11)
 
 ### CORS 이슈 해결
+
 API 접근 실패 시:
+
 1. **CORS 프록시**: 여러 프록시를 자동으로 시도합니다
 2. **CSV 백업**: UI에서 CSV 파일 수동 업로드 가능
 3. **로컬 캐싱**: 성공한 데이터를 LocalStorage에 캐싱
@@ -334,12 +357,14 @@ elon-musk-tweet-activity/
 ### 개발 환경 설정
 
 1. **의존성 설치**
+
    ```bash
    cd react-app
    yarn install
    ```
 
 2. **개발 서버 실행**
+
    ```bash
    yarn dev
    # HMR(Hot Module Replacement) 지원으로 자동 리로드
@@ -372,27 +397,28 @@ yarn type-check   # TypeScript 타입 검사
 
 ### 모듈별 수정 가이드 (React)
 
-| 작업 내용 | 수정 파일 |
-|-----------|-----------|
-| 설정값 변경 | `config/constants.ts` |
-| 날짜/시간 처리 로직 | `utils/dateTime.ts` |
-| 성능 최적화 | `utils/performance.ts` |
-| API 엔드포인트 변경 | `services/api.ts` |
-| CSV 파싱 로직 | `utils/parser.ts` |
-| 히트맵 데이터 처리 | `utils/processor.ts` |
-| 예측/분석 알고리즘 | `utils/analytics.ts` |
-| 전역 상태 관리 | `store/useAppStore.ts` (Zustand) |
-| UI 컴포넌트 | `components/` 디렉토리 |
-| 히트맵 렌더링 | `components/heatmap/Heatmap.tsx` |
-| 헤더/컨트롤 패널 | `components/layout/Header.tsx` |
-| 테마 (다크 모드) | `hooks/useTheme.ts` |
-| TypeScript 타입 정의 | `types/index.ts` |
+| 작업 내용            | 수정 파일                        |
+| -------------------- | -------------------------------- |
+| 설정값 변경          | `config/constants.ts`            |
+| 날짜/시간 처리 로직  | `utils/dateTime.ts`              |
+| 성능 최적화          | `utils/performance.ts`           |
+| API 엔드포인트 변경  | `services/api.ts`                |
+| CSV 파싱 로직        | `utils/parser.ts`                |
+| 히트맵 데이터 처리   | `utils/processor.ts`             |
+| 예측/분석 알고리즘   | `utils/analytics.ts`             |
+| 전역 상태 관리       | `store/useAppStore.ts` (Zustand) |
+| UI 컴포넌트          | `components/` 디렉토리           |
+| 히트맵 렌더링        | `components/heatmap/Heatmap.tsx` |
+| 헤더/컨트롤 패널     | `components/layout/Header.tsx`   |
+| 테마 (다크 모드)     | `hooks/useTheme.ts`              |
+| TypeScript 타입 정의 | `types/index.ts`                 |
 
 ### 중요 개발 규칙
 
 #### ⚠️ 필수 준수 사항
 
 1. **TypeScript 타입 사용**
+
    ```typescript
    // ✅ CORRECT
    import type { HeatmapData } from '@/types';
@@ -403,6 +429,7 @@ yarn type-check   # TypeScript 타입 검사
    ```
 
 2. **날짜/시간 처리**
+
    ```typescript
    // ✅ CORRECT
    import { getETComponents } from '@/utils/dateTime';
@@ -414,6 +441,7 @@ yarn type-check   # TypeScript 타입 검사
    ```
 
 3. **스타일링**
+
    ```tsx
    {/* ✅ CORRECT - Tailwind 클래스 */}
    <div className="text-sm md:text-base dark:text-gray-300">
@@ -423,6 +451,7 @@ yarn type-check   # TypeScript 타입 검사
    ```
 
 4. **Zustand 상태 사용**
+
    ```typescript
    // ✅ CORRECT - 컴포넌트에서 구독
    const { currentData } = useAppStore();
@@ -450,6 +479,7 @@ yarn type-check   # TypeScript 타입 검사
 ### 상세 개발 가이드
 
 더 자세한 내용은 [`CLAUDE.md`](./CLAUDE.md) 참조:
+
 - React 아키텍처 상세 설명
 - Zustand 상태 관리 가이드
 - TypeScript 타입 정의 방법
@@ -465,6 +495,7 @@ MIT License
 ## 🤝 기여
 
 Pull Request 환영합니다! 기여하기 전에:
+
 1. `CLAUDE.md`의 개발 가이드라인 확인
 2. 테스트 체크리스트 통과
 3. 코드 스타일 준수 (Tailwind, ET 시간대 처리 등)
