@@ -10,7 +10,13 @@ import {
   WEEKS_FOR_TREND,
 } from '@/config/constants';
 import { HeatmapData, PredictionData, Tweet } from '@/types';
-import { formatHour, getETComponents, parseETNoonDate, parseTwitterDate } from '@/utils/dateTime';
+import {
+  createETNoonDate,
+  formatHour,
+  getETComponents,
+  parseETNoonDate,
+  parseTwitterDate
+} from '@/utils/dateTime';
 import { memoize } from '@/utils/performance';
 
 // ============================================================================
@@ -240,20 +246,38 @@ function calculatePredictionsInternal(
     const startDate = currentData.dateRange.start;
     const endDate = currentData.dateRange.end;
 
-    // Calculate elapsed hours
-    elapsedHours = Math.max(0, (now.getTime() - startDate.getTime()) / (1000 * 60 * 60));
+    // Get ET components to properly handle noon boundaries
+    const startET = getETComponents(startDate);
+    const endET = getETComponents(endDate);
+    const nowET = getETComponents(now);
 
-    // Calculate total hours in the week (Friday noon to Friday noon = 7*24 = 168 hours)
-    totalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+    // Create proper ET noon dates for accurate calculation
+    const actualStartNoon = createETNoonDate(startET.year, startET.month + 1, startET.day);
+    const actualEndNoon = createETNoonDate(endET.year, endET.month + 1, endET.day);
+
+    // Calculate elapsed hours from actual start (Friday noon ET)
+    // If we're before the start, elapsed is 0
+    if (now < actualStartNoon) {
+      elapsedHours = 0;
+    } else if (now > actualEndNoon) {
+      // If we're past the end, use total hours
+      elapsedHours = (actualEndNoon.getTime() - actualStartNoon.getTime()) / (1000 * 60 * 60);
+    } else {
+      // Normal case: calculate from start noon to now
+      elapsedHours = (now.getTime() - actualStartNoon.getTime()) / (1000 * 60 * 60);
+    }
+
+    // Calculate total hours (should be exactly 168 for a full week)
+    totalHours = (actualEndNoon.getTime() - actualStartNoon.getTime()) / (1000 * 60 * 60);
 
     if (elapsedHours > 0 && totalHours > 0) {
+      // Ensure we don't exceed total hours
+      elapsedHours = Math.min(elapsedHours, totalHours);
+
       const tweetsPerHour = currentData.current / elapsedHours;
       const remainingHours = Math.max(0, totalHours - elapsedHours);
-      const projectedAdditional = Math.max(0, tweetsPerHour * remainingHours);
-      const projectedTotal = Math.max(
-        currentData.current,
-        Math.round(currentData.current + projectedAdditional),
-      );
+      const projectedAdditional = tweetsPerHour * remainingHours;
+      const projectedTotal = Math.round(currentData.current + projectedAdditional);
 
       debugLog('Pace calculation:', {
         current: currentData.current,
@@ -263,13 +287,17 @@ function calculatePredictionsInternal(
         projectedAdditional: projectedAdditional.toFixed(2),
         beforeRound: (currentData.current + projectedAdditional).toFixed(2),
         projectedTotal: projectedTotal,
-        startDate: startDate.toString(),
-        endDate: endDate.toString(),
-        now: now.toString(),
+        actualStartNoon: actualStartNoon.toISOString(),
+        actualEndNoon: actualEndNoon.toISOString(),
+        now: now.toISOString(),
+        nowET: `${nowET.year}-${nowET.month + 1}-${nowET.day} ${nowET.hour}:${nowET.minute} ET`,
         totalHours: totalHours.toFixed(2),
       });
 
       pace = projectedTotal.toLocaleString();
+    } else if (elapsedHours === 0) {
+      // If no time has elapsed yet (before start), show current total as pace
+      pace = currentData.current.toLocaleString();
     }
   }
 
