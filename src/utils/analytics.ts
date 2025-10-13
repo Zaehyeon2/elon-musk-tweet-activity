@@ -15,7 +15,7 @@ import {
   formatHour,
   getETComponents,
   parseETNoonDate,
-  parseTwitterDate
+  parseTwitterDate,
 } from '@/utils/dateTime';
 import { memoize } from '@/utils/performance';
 
@@ -327,8 +327,8 @@ function calculatePredictionsInternal(
 
         // Only include if this time has elapsed
         if (absoluteHourFromStart < elapsedHours) {
-          if (avgData.grid[h] && avgData.grid[h]![d] !== undefined) {
-            comparableAvgTotal += avgData.grid[h]![d]!;
+          if (avgData.grid[h] && avgData.grid[h][d] !== undefined) {
+            comparableAvgTotal += avgData.grid[h][d];
           }
         }
       }
@@ -505,7 +505,7 @@ function calculate4WeekAverageInternal(
     const currentDate = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
     const etComponents = getETComponents(currentDate);
     const dayOfWeek = etComponents.dayOfWeek;
-    days.push(dayNames[dayOfWeek]!);
+    days.push(dayNames[dayOfWeek]);
   }
 
   // Initialize grid for totals (8 days)
@@ -570,8 +570,8 @@ function calculate4WeekAverageInternal(
           if (daysDiff === 0 && hour < 12) return; // Skip first day before noon
           if (daysDiff === 7 && hour >= 12) return; // Skip last day from noon
 
-          totals[hour]![daysDiff]!++;
-          weekCounts[hour]![daysDiff]!++;
+          totals[hour][daysDiff]++;
+          weekCounts[hour][daysDiff]++;
         }
       }
     });
@@ -593,7 +593,7 @@ function calculate4WeekAverageInternal(
       // Skip disabled cells based on noon rules
       if (dayIndex === 0 && hourIndex < 12) continue; // First day before noon
       if (dayIndex === days.length - 1 && hourIndex >= 12) continue; // Last day from noon
-      total += avgGrid[hourIndex]![dayIndex]!;
+      total += avgGrid[hourIndex][dayIndex];
     }
     return Math.round(total);
   });
