@@ -95,7 +95,7 @@ function App() {
                       data={avgData}
                       title="4-Week Average"
                       description="Average tweet activity over the past 4 weeks"
-                      showCurrentHour={false}
+                      showCurrentHour={true}
                       type="average"
                     />
                   </div>

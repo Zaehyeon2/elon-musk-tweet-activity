@@ -159,11 +159,22 @@ export const Heatmap: React.FC<HeatmapProps> = ({
                     {days.map((day, dayIndex) => {
                       const value = grid[hourIndex]?.[dayIndex] ?? 0;
                       const disabled = isCellDisabled(dayIndex, hourIndex);
-                      const future = isFutureTime(dayIndex, hourIndex, dateRange.start);
+                      // Only check for future time in current heatmap, not in average
+                      const future =
+                        type === 'current'
+                          ? isFutureTime(dayIndex, hourIndex, dateRange.start)
+                          : false;
                       const current =
                         showCurrentHour && isCurrentHour(day, hourIndex, now, dateRange.start);
 
-                      const displayValue = disabled ? '-' : future ? '' : value.toString();
+                      // For average heatmap, show decimal values
+                      const displayValue = disabled
+                        ? '-'
+                        : future
+                          ? ''
+                          : type === 'average' && typeof value === 'number'
+                            ? value.toFixed(1)
+                            : value.toString();
                       const cellColor = getHeatmapCellClasses(value, disabled, future);
                       const textColor = getTextColor(value, disabled, future);
 
