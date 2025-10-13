@@ -161,7 +161,7 @@ const calculatePredictionConfidenceMemoized = memoize(
   function (prediction: number) {
     return calculatePredictionConfidenceInternal(prediction);
   },
-  (pred) => `conf_${Math.round(pred)}`,
+  { keyGenerator: (pred: number) => `conf_${Math.round(pred)}` },
 );
 
 function calculatePredictionConfidence(avgData: HeatmapData | null, prediction: number) {
@@ -191,8 +191,10 @@ const calculatePredictionsMemoized = memoize(
   function (currentData: HeatmapData | null, avgData: HeatmapData | null) {
     return calculatePredictionsInternal(currentData, avgData);
   },
-  (curr, avg) =>
-    `pred_${curr?.current}_${avg?.current}_${curr?.dateRange?.start.getTime()}_${curr?.dateRange?.end.getTime()}`,
+  {
+    keyGenerator: (curr: HeatmapData | null, avg: HeatmapData | null) =>
+      `pred_${curr?.current}_${avg?.current}_${curr?.dateRange?.start.getTime()}_${curr?.dateRange?.end.getTime()}`,
+  },
 );
 
 // Prediction functions
@@ -440,7 +442,10 @@ const calculate4WeekAverageMemoized = memoize(
   function (tweets: Tweet[], currentStartDate: Date, currentEndDate: Date) {
     return calculate4WeekAverageInternal(tweets, currentStartDate, currentEndDate);
   },
-  (tweets, start, end) => `avg_${start.getTime()}_${end.getTime()}_${tweets.length}`,
+  {
+    keyGenerator: (tweets: Tweet[], start: Date, end: Date) =>
+      `avg_${start.getTime()}_${end.getTime()}_${tweets.length}`,
+  },
 );
 
 // Calculate 4-week average

@@ -64,11 +64,11 @@ export function useDebouncedValue<T>(value: T, delay = 500): T {
  * Hook for debouncing callbacks
  * Returns a stable debounced callback function
  */
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
+export function useDebouncedCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay = 500,
 ): T {
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const callbackRef = useRef(callback);
 
   // Update callback ref when it changes
@@ -94,12 +94,12 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
  * Hook for throttling callbacks
  * Returns a stable throttled callback function
  */
-export function useThrottledCallback<T extends (...args: any[]) => any>(
+export function useThrottledCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
   limit = 500,
 ): T {
   const lastRunRef = useRef<number>(0);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const callbackRef = useRef(callback);
 
   // Update callback ref when it changes
@@ -159,7 +159,7 @@ export function useRenderMetrics(componentName: string): void {
  * Only computes the value when it's first accessed
  */
 export function useLazyValue<T>(initializer: () => T): () => T {
-  const valueRef = useRef<T>();
+  const valueRef = useRef<T | undefined>(undefined);
   const initializedRef = useRef(false);
 
   return useCallback(() => {
@@ -167,7 +167,7 @@ export function useLazyValue<T>(initializer: () => T): () => T {
       valueRef.current = initializer();
       initializedRef.current = true;
     }
-    return valueRef.current;
+    return valueRef.current as T;
   }, [initializer]);
 }
 
@@ -341,8 +341,10 @@ export function useIntersectionObserver(
       if (element) {
         if (!observerRef.current) {
           observerRef.current = new IntersectionObserver(([entry]) => {
-            setIsIntersecting(entry.isIntersecting);
-            setEntry(entry);
+            if (entry) {
+              setIsIntersecting(entry.isIntersecting);
+              setEntry(entry);
+            }
           }, options);
         }
         observerRef.current.observe(element);

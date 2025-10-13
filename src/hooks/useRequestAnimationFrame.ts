@@ -8,8 +8,8 @@ export function useRequestAnimationFrame(
   callback: (deltaTime: number) => void,
   isActive = true,
 ): void {
-  const requestRef = useRef<number>();
-  const previousTimeRef = useRef<number>();
+  const requestRef = useRef<number | undefined>(undefined);
+  const previousTimeRef = useRef<number | undefined>(undefined);
   const callbackRef = useRef(callback);
 
   // Update callback ref when it changes
@@ -43,7 +43,7 @@ export function useRequestAnimationFrame(
  * Batches multiple updates into a single frame
  */
 export function useRAFUpdate<T>(value: T, updater: (value: T) => void): void {
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     // Cancel any pending RAF
@@ -75,7 +75,7 @@ export function useAnimatedValue(
 ): number {
   const [currentValue, setCurrentValue] = useState(targetValue);
   const startValueRef = useRef(targetValue);
-  const startTimeRef = useRef<number>();
+  const startTimeRef = useRef<number | undefined>(undefined);
 
   const easingFunctions = {
     linear: (t: number) => t,
@@ -111,7 +111,7 @@ export function useAnimatedValue(
  */
 export function useBatchedUpdates() {
   const updatesRef = useRef<(() => void)[]>([]);
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number | undefined>(undefined);
 
   const scheduleUpdate = useCallback((update: () => void) => {
     updatesRef.current.push(update);

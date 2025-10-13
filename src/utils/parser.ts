@@ -47,6 +47,7 @@ export function parseCSV(csvText: string, weeksToKeep: number = 5): Tweet[] {
     // Process tweets in reverse order (newest first)
     for (let i = tweetLines.length - 1; i >= 0; i--) {
       const line = tweetLines[i];
+      if (!line) continue;
 
       // Extract the date/time part
       const edtIndex = line.lastIndexOf('EDT"');
@@ -78,7 +79,9 @@ export function parseCSV(csvText: string, weeksToKeep: number = 5): Tweet[] {
               'Nov',
               'Dec',
             ];
-            const monthIndex = monthNames.indexOf(monthMatch[1]);
+            const monthStr = monthMatch[1];
+            if (!monthStr) continue;
+            const monthIndex = monthNames.indexOf(monthStr);
 
             // Detect year change when going backwards
             if (monthIndex > lastMonth && lastMonth !== 13) {
@@ -190,4 +193,13 @@ export function exportToCSV(tweets: Tweet[]): string {
   });
 
   return csv;
+}
+
+/**
+ * Generate CSV from tweets (alias for exportToCSV for backward compatibility)
+ * @param tweets - Array of tweets to export
+ * @returns CSV string
+ */
+export function generateCSV(tweets: Tweet[]): string {
+  return exportToCSV(tweets);
 }

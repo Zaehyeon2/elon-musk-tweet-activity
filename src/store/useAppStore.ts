@@ -31,10 +31,10 @@ const initialState = {
   theme: 'light' as 'light' | 'dark',
   refreshCountdown: 60,
   lastRefreshTime: null as Date | null,
-  autoRefreshTimer: null as NodeJS.Timeout | null,
-  autoRefreshInterval: null as NodeJS.Timeout | null,
-  countdownTimer: null as NodeJS.Timeout | null,
-  countdownInterval: null as NodeJS.Timeout | null,
+  autoRefreshTimer: null as ReturnType<typeof setTimeout> | null,
+  autoRefreshInterval: null as ReturnType<typeof setInterval> | null,
+  countdownTimer: null as ReturnType<typeof setTimeout> | null,
+  countdownInterval: null as ReturnType<typeof setInterval> | null,
 };
 
 export const useAppStore = create<AppState>()(
@@ -100,7 +100,7 @@ export const useAppStore = create<AppState>()(
               let selectedRange = state.selectedRange;
               if (!selectedRange && ranges.length > 0) {
                 const lastRangeId = CacheService.loadLastRange();
-                selectedRange = ranges.find((r) => r.label === lastRangeId);
+                selectedRange = ranges.find((r) => r.label === lastRangeId) ?? null;
 
                 // If no saved range, use the default (earliest ongoing or most recent)
                 if (!selectedRange) {
@@ -226,8 +226,11 @@ export const useAppStore = create<AppState>()(
             let csvContent = 'Hour,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday\n';
 
             currentData.hours.forEach((hour, hourIndex) => {
-              const row = [hour, ...currentData.grid[hourIndex]];
-              csvContent += row.join(',') + '\n';
+              const gridRow = currentData.grid[hourIndex];
+              if (gridRow) {
+                const row = [hour, ...gridRow];
+                csvContent += row.join(',') + '\n';
+              }
             });
 
             // Add totals row

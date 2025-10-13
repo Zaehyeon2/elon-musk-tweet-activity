@@ -76,7 +76,7 @@ export function memoize<T extends (...args: any[]) => any>(
     cache?: LRUCache<string, ReturnType<T>>;
   },
 ): T {
-  const { keyGenerator = (...args) => JSON.stringify(args), cache = globalMemoCache } =
+  const { keyGenerator = (...args: unknown[]) => JSON.stringify(args), cache = globalMemoCache } =
     options || {};
 
   return ((...args: Parameters<T>): ReturnType<T> => {

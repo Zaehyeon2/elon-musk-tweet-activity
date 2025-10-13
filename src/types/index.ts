@@ -72,10 +72,10 @@ export interface AppState {
   lastRefreshTime: Date | null;
 
   // Timers
-  autoRefreshTimer: NodeJS.Timeout | null;
-  autoRefreshInterval: NodeJS.Timeout | null; // Additional timer from vanilla JS
-  countdownTimer: NodeJS.Timeout | null;
-  countdownInterval: NodeJS.Timeout | null; // Additional timer from vanilla JS
+  autoRefreshTimer: ReturnType<typeof setTimeout> | null;
+  autoRefreshInterval: ReturnType<typeof setInterval> | null; // Additional timer from vanilla JS
+  countdownTimer: ReturnType<typeof setTimeout> | null;
+  countdownInterval: ReturnType<typeof setInterval> | null; // Additional timer from vanilla JS
 
   // Actions
   loadData: (forceRefresh?: boolean) => Promise<void>;

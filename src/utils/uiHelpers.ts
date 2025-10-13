@@ -74,7 +74,7 @@ export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number,
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
 
   return function (this: any, ...args: Parameters<T>) {
     const context = this;
@@ -96,7 +96,7 @@ export function throttle<T extends (...args: any[]) => any>(
   limit: number,
 ): (...args: Parameters<T>) => void {
   let inThrottle = false;
-  let lastFunc: NodeJS.Timeout | null = null;
+  let lastFunc: ReturnType<typeof setTimeout> | null = null;
   let lastRan: number | null = null;
 
   return function (this: any, ...args: Parameters<T>) {

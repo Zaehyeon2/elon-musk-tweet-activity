@@ -86,18 +86,19 @@ export function parseTwitterDate(dateStr: string): Date | null {
       'Nov',
       'Dec',
     ];
-    const month = monthNames.indexOf(monthStr.substring(0, 3)) + 1; // 1-based month
+    const monthIdx = monthStr ? monthNames.indexOf(monthStr.substring(0, 3)) : -1;
+    const month = monthIdx + 1; // 1-based month
     if (month === 0) {
       debugLog('Invalid month:', monthStr);
       dateCache.set(dateStr, null);
       return null;
     }
 
-    const day = parseInt(dayStr);
-    const year = parseInt(yearStr);
-    let hour = parseInt(hourStr);
-    const minute = parseInt(minuteStr);
-    const second = parseInt(secondStr);
+    const day = dayStr ? parseInt(dayStr) : 0;
+    const year = yearStr ? parseInt(yearStr) : 0;
+    let hour = hourStr ? parseInt(hourStr) : 0;
+    const minute = minuteStr ? parseInt(minuteStr) : 0;
+    const second = secondStr ? parseInt(secondStr) : 0;
 
     // Convert 12-hour to 24-hour format
     if (ampm === 'PM' && hour !== 12) {
@@ -222,7 +223,7 @@ export function createETNoonDate(year: number, month: number, day: number): Date
  */
 export function parseETNoonDate(dateString: string): Date {
   const [year, month, day] = dateString.split('-').map(Number);
-  return createETNoonDate(year, month, day);
+  return createETNoonDate(year ?? 0, month ?? 0, day ?? 0);
 }
 
 /**

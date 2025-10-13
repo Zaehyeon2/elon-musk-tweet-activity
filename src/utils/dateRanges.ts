@@ -49,10 +49,19 @@ export function generateWeekRanges(tweets: Tweet[]): WeekRange[] {
   const tuesdayRange = getCurrentWeekRange(recentTuesday, 2, currentET);
 
   // Collect all ranges (current + past 8 weeks)
-  const allRanges = [
-    ...generateRangesForDay(fridayRange.start, minDate, maxDate, 'friday'),
-    ...generateRangesForDay(tuesdayRange.start, minDate, maxDate, 'tuesday'),
-  ];
+  const allRanges: Array<{ start: Date; end: Date; type: 'friday' | 'tuesday' }> = [];
+
+  // Process friday ranges
+  const fridayStart = fridayRange?.start;
+  if (fridayStart instanceof Date) {
+    allRanges.push(...generateRangesForDay(fridayStart as Date, minDate, maxDate, 'friday'));
+  }
+
+  // Process tuesday ranges
+  const tuesdayStart = tuesdayRange?.start;
+  if (tuesdayStart instanceof Date) {
+    allRanges.push(...generateRangesForDay(tuesdayStart as Date, minDate, maxDate, 'tuesday'));
+  }
 
   // Filter and format ranges
   allRanges
@@ -132,7 +141,7 @@ function generateRangesForDay(
   maxDate: Date,
   type: 'friday' | 'tuesday',
 ): Array<{ start: Date; end: Date; type: 'friday' | 'tuesday' }> {
-  const ranges = [];
+  const ranges: Array<{ start: Date; end: Date; type: 'friday' | 'tuesday' }> = [];
 
   // Add current/upcoming range
   const endDay = new Date(startDay);
@@ -181,8 +190,8 @@ function formatRangeLabel(start: Date, end: Date, isMobile: boolean): string {
     day: 'numeric',
   });
 
-  const startDay = dayNames[startET.dayOfWeek];
-  const endDay = dayNames[endET.dayOfWeek];
+  const startDay = dayNames[startET.dayOfWeek] ?? '';
+  const endDay = dayNames[endET.dayOfWeek] ?? '';
 
   // If start and end days are the same (e.g., Fri-Fri), show only one day
   const dayLabel = startDay === endDay ? startDay : `${startDay}-${endDay}`;
@@ -211,5 +220,5 @@ export function getDefaultWeekRange(ranges: WeekRange[]): WeekRange | null {
   }
 
   // No ongoing ranges, return most recent
-  return ranges[0];
+  return ranges[0] ?? null;
 }
