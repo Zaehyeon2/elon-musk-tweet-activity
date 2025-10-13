@@ -77,9 +77,9 @@ export const Header: React.FC = () => {
           {/* Auto Refresh Toggle */}
           <Button
             variant={autoRefresh ? 'default' : 'outline'}
-            size="sm"
+            size="default"
             onClick={toggleAutoRefresh}
-            className={`min-w-[100px] ${
+            className={`min-w-[100px] h-9 px-3 text-xs ${
               autoRefresh
                 ? 'bg-blue-600 hover:bg-blue-700 text-white'
                 : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
