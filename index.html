@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Elon Musk Tweet Activity Tracker</title>
+    <script>
+      // Prevent FOUC (Flash of Unstyled Content) by setting theme immediately
+      (function() {
+        try {
+          // Use the existing theme storage key used by the app
+          const savedTheme = localStorage.getItem('elon-tracker-storage');
+          if (savedTheme) {
+            const parsed = JSON.parse(savedTheme);
+            const theme = parsed?.state?.theme || 'light';
+            document.documentElement.classList.add(theme);
+          } else {
+            // Check system preference as fallback
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.classList.add(prefersDark ? 'dark' : 'light');
+          }
+        } catch (e) {
+          // Default to light theme if anything goes wrong
+          document.documentElement.classList.add('light');
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-CED_Ej1m.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-ePGpGqjq.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
