@@ -310,26 +310,9 @@ export function isCurrentHour(
   const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   const currentDayName = dayNames[currentET.dayOfWeek];
 
-  // Check if same day and hour
-  if (currentDayName === day && currentET.hour === hour) {
-    // If we have a start date, verify we're in the current week
-    if (startDate) {
-      const currentDateStr = `${currentET.year}-${String(currentET.month + 1).padStart(2, '0')}-${String(currentET.day).padStart(2, '0')}`;
-      const startET = getETComponents(startDate);
-      const startDateStr = `${startET.year}-${String(startET.month + 1).padStart(2, '0')}-${String(startET.day).padStart(2, '0')}`;
-
-      const currentDayNoon = parseETNoonDate(currentDateStr);
-      const startDayNoon = parseETNoonDate(startDateStr);
-
-      const daysDiff = Math.round(
-        (currentDayNoon.getTime() - startDayNoon.getTime()) / (1000 * 60 * 60 * 24),
-      );
-      return daysDiff >= 0 && daysDiff < DAYS_IN_WEEK;
-    }
-    return true;
-  }
-
-  return false;
+  // Check if same day and hour - regardless of date range
+  // This shows current time indicator on all date ranges
+  return currentDayName === day && currentET.hour === hour;
 }
 
 /**
