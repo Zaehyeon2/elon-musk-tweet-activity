@@ -8,6 +8,7 @@ import { Tweet } from '@/types';
 interface CachedData {
   tweets: Tweet[];
   timestamp: number;
+  lastRefreshTime?: number; // When the data was actually fetched from API
 }
 
 /**
@@ -25,13 +26,15 @@ const STORAGE_KEYS = {
  */
 export const CacheService = {
   /**
-   * Save tweets to cache
+   * Save tweets to cache with optional refresh time
    */
-  saveTweets(tweets: Tweet[]): void {
+  saveTweets(tweets: Tweet[], isFromApi = true): void {
     try {
+      const now = Date.now();
       const data: CachedData = {
         tweets,
-        timestamp: Date.now(),
+        timestamp: now,
+        lastRefreshTime: isFromApi ? now : undefined,
       };
       localStorage.setItem(STORAGE_KEYS.TWEET_DATA, JSON.stringify(data));
       debugLog(`Cached ${tweets.length} tweets`);

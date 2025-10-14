@@ -9,7 +9,10 @@ export function useInitialLoad() {
   const loadData = useAppStore((state) => state.loadData);
 
   useEffect(() => {
-    // Load data on mount
-    void loadData(false);
+    // First load cached data immediately (if available)
+    void loadData(false).then(() => {
+      // Then refresh from API in background
+      void loadData(true);
+    });
   }, [loadData]);
 }

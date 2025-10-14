@@ -49,11 +49,16 @@ export const useAppStore = create<AppState>()(
               let fromCache = false;
 
               // Try cache first if not forcing refresh
+              let cachedRefreshTime: Date | null = null;
               if (!forceRefresh) {
                 const cached = CacheService.loadTweets();
                 if (cached) {
                   tweets = cached.tweets;
                   fromCache = true;
+                  // Use the lastRefreshTime from cache if available
+                  if (cached.lastRefreshTime) {
+                    cachedRefreshTime = new Date(cached.lastRefreshTime);
+                  }
                   debugLog('Using cached data');
                 }
               }
@@ -127,7 +132,9 @@ export const useAppStore = create<AppState>()(
                   predictions,
                   isLoading: false,
                   isLoadingData: false,
-                  lastRefreshTime: new Date(),
+                  // Update lastRefreshTime: from API (new Date), from cache (cached time), or keep existing
+                  ...((!fromCache || forceRefresh) ? { lastRefreshTime: new Date() } :
+                      (cachedRefreshTime ? { lastRefreshTime: cachedRefreshTime } : {})),
                 });
 
                 // Save selected range
@@ -140,7 +147,9 @@ export const useAppStore = create<AppState>()(
                   availableRanges: ranges,
                   isLoading: false,
                   isLoadingData: false,
-                  lastRefreshTime: new Date(),
+                  // Update lastRefreshTime only when data is from API
+                  ...((!fromCache || forceRefresh) ? { lastRefreshTime: new Date() } :
+                      (cachedRefreshTime ? { lastRefreshTime: cachedRefreshTime } : {})),
                 });
               }
 
@@ -169,8 +178,8 @@ export const useAppStore = create<AppState>()(
 
               debugLog(`Successfully parsed ${tweets.length} tweets from CSV`);
 
-              // Save to cache
-              CacheService.saveTweets(tweets);
+              // Save to cache (CSV upload is not from API)
+              CacheService.saveTweets(tweets, false);
 
               // Generate available date ranges
               const ranges = generateDateRanges(tweets);
@@ -196,7 +205,7 @@ export const useAppStore = create<AppState>()(
                 predictions,
                 isLoading: false,
                 isLoadingData: false,
-                lastRefreshTime: new Date(),
+                // Don't update lastRefreshTime for CSV uploads (not from API)
               });
             } catch (error) {
               console.error('Failed to upload CSV:', error);

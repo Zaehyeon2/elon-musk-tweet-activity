@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { ErrorMessage } from '@/components/common/ErrorMessage';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { SkeletonLoader } from '@/components/common/SkeletonLoader';
 import { Heatmap } from '@/components/heatmap/Heatmap';
 import { Header } from '@/components/layout/Header';
 import { PredictionsCard } from '@/components/statistics/PredictionsCard';
@@ -51,11 +51,20 @@ function App() {
           {/* Main Content */}
           <main className="px-3 sm:px-4 pb-4">
             <div className="space-y-3 sm:space-y-6">
-              {/* Loading State */}
+              {/* Loading State - Show skeleton loaders */}
               {isLoading && rawTweets.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <LoadingSpinner size="lg" />
-                  <p className="mt-4 text-gray-600 dark:text-gray-400">Loading tweet data...</p>
+                <div className="space-y-3 sm:space-y-6">
+                  {/* Statistics Skeleton */}
+                  <SkeletonLoader type="card" className="h-32" />
+
+                  {/* Predictions Skeleton */}
+                  <SkeletonLoader type="card" className="h-40" />
+
+                  {/* Heatmaps Skeleton - Side by side on desktop */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <SkeletonLoader type="heatmap" rows={24} cols={8} />
+                    <SkeletonLoader type="heatmap" rows={24} cols={8} />
+                  </div>
                 </div>
               )}
 
