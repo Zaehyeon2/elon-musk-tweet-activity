@@ -9,7 +9,13 @@ interface CachedData {
   tweets: Tweet[];
   timestamp: number;
   lastRefreshTime?: number; // When the data was actually fetched from API
+  version?: number; // Cache version to invalidate old data
 }
+
+/**
+ * Cache version - increment to invalidate old cached data
+ */
+const CACHE_VERSION = 2; // Increment this to force cache refresh
 
 /**
  * Local storage keys
@@ -35,9 +41,10 @@ export const CacheService = {
         tweets,
         timestamp: now,
         lastRefreshTime: isFromApi ? now : undefined,
+        version: CACHE_VERSION, // Add version to cache
       };
       localStorage.setItem(STORAGE_KEYS.TWEET_DATA, JSON.stringify(data));
-      debugLog(`Cached ${tweets.length} tweets`);
+      debugLog(`Cached ${tweets.length} tweets with version ${CACHE_VERSION}`);
     } catch (error) {
       console.error('Failed to save to cache:', error);
     }
@@ -52,6 +59,13 @@ export const CacheService = {
       if (!cached) return null;
 
       const data = JSON.parse(cached) as CachedData;
+
+      // Check cache version - invalidate old cache
+      if (!data.version || data.version < CACHE_VERSION) {
+        debugLog(`Cache version mismatch (${data.version} < ${CACHE_VERSION}), clearing...`);
+        this.clearTweets();
+        return null;
+      }
 
       // Check if cache is expired
       if (Date.now() - data.timestamp > CACHE_EXPIRY) {

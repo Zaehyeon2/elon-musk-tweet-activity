@@ -37,6 +37,9 @@ export function generateWeekRanges(tweets: Tweet[]): WeekRange[] {
   const now = new Date();
   const currentET = getETComponents(now);
 
+  debugLog(`[generateWeekRanges] Tweet date range: ${minDate.toISOString()} to ${maxDate.toISOString()}`);
+  debugLog(`[generateWeekRanges] Total tweets: ${tweets.length}`);
+
   // Find the most recent Friday and Tuesday
   const recentFriday = findRecentDayOfWeek(now, 5); // 5 = Friday
   const recentTuesday = findRecentDayOfWeek(now, 2); // 2 = Tuesday
@@ -45,7 +48,7 @@ export function generateWeekRanges(tweets: Tweet[]): WeekRange[] {
   const fridayRange = getCurrentWeekRange(recentFriday, 5, currentET);
   const tuesdayRange = getCurrentWeekRange(recentTuesday, 2, currentET);
 
-  // Collect all ranges (current + past 8 weeks)
+  // Collect all ranges (current + past 12 weeks)
   const allRanges: Array<{ start: Date; end: Date; type: 'friday' | 'tuesday' }> = [];
 
   // Process friday ranges
@@ -54,15 +57,26 @@ export function generateWeekRanges(tweets: Tweet[]): WeekRange[] {
   // Process tuesday ranges
   allRanges.push(...generateRangesForDay(tuesdayRange.start, minDate, maxDate, 'tuesday'));
 
+  debugLog(`[generateWeekRanges] Total allRanges before filter: ${allRanges.length}`);
+
   // Filter and format ranges
-  allRanges
-    .filter((range) => {
-      // Only include ranges that have started (noon ET on start date)
-      const startET = getETComponents(range.start);
-      const startDateStr = formatDateString(startET);
-      const rangeStartNoon = parseETNoonDate(startDateStr);
-      return rangeStartNoon <= now;
-    })
+  const filteredRanges = allRanges.filter((range) => {
+    // Only include ranges that have started (noon ET on start date)
+    const startET = getETComponents(range.start);
+    const startDateStr = formatDateString(startET);
+    const rangeStartNoon = parseETNoonDate(startDateStr);
+    const hasStarted = rangeStartNoon <= now;
+
+    if (!hasStarted) {
+      debugLog(`[generateWeekRanges] Filtered out future range: ${range.start.toISOString()}`);
+    }
+
+    return hasStarted;
+  });
+
+  debugLog(`[generateWeekRanges] Ranges after filter: ${filteredRanges.length}`);
+
+  filteredRanges
     .sort((a, b) => b.start.getTime() - a.start.getTime())
     .forEach((range) => {
       const startET = getETComponents(range.start);
@@ -139,17 +153,24 @@ function generateRangesForDay(
   endDay.setTime(endDay.getTime() + 7 * 24 * 60 * 60 * 1000);
   ranges.push({ start: new Date(startDay), end: new Date(endDay), type });
 
-  // Add past 8 weeks
+  // Add past 12 weeks (to show more historical data)
   let pastDay = new Date(startDay);
-  for (let i = 0; i < 8; i++) {
+  debugLog(`[generateRangesForDay] Starting from ${startDay.toISOString()} for type: ${type}`);
+
+  for (let i = 0; i < 12; i++) {
     const end = new Date(pastDay);
     pastDay = new Date(pastDay);
     pastDay.setTime(pastDay.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    if (pastDay >= minDate && pastDay <= maxDate) {
-      ranges.push({ start: new Date(pastDay), end: new Date(end), type });
-    }
+    debugLog(`[generateRangesForDay] Week ${i + 1}: ${pastDay.toISOString()} to ${end.toISOString()}`);
+
+    // Remove the date check to show all past weeks regardless of data availability
+    // This allows showing empty weeks in the dropdown
+    ranges.push({ start: new Date(pastDay), end: new Date(end), type });
   }
+
+  debugLog(`[generateRangesForDay] Generated ${ranges.length} ranges for ${type}`);
+
 
   return ranges;
 }

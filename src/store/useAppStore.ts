@@ -77,7 +77,7 @@ export const useAppStore = create<AppState>()(
                 }
 
                 debugLog('Store: About to parse CSV, length:', csvText.length);
-                tweets = parseCSV(csvText, 5);
+                tweets = parseCSV(csvText, 12);
                 debugLog('Store: Parsed tweets count:', tweets.length);
 
                 if (tweets.length === 0) {
@@ -176,7 +176,7 @@ export const useAppStore = create<AppState>()(
 
             try {
               const text = await file.text();
-              const tweets = parseCSV(text, 5);
+              const tweets = parseCSV(text, 12);
 
               if (tweets.length === 0) {
                 throw new Error('No valid tweets found in CSV');

@@ -10,13 +10,14 @@ import { getETComponents, parseTwitterDate } from '@/utils/dateTime';
 /**
  * Parse CSV text into tweet objects
  * @param csvText - Raw CSV text from X Tracker API or file
- * @param weeksToKeep - Number of weeks of data to keep (default: 5)
+ * @param weeksToKeep - Number of weeks of data to keep (default: 12)
  * @returns Array of parsed tweet objects
  */
-export function parseCSV(csvText: string, weeksToKeep: number = 5): Tweet[] {
+export function parseCSV(csvText: string, weeksToKeep: number = 12): Tweet[] {
   try {
     debugLog('parseCSV: Input length:', csvText.length);
     debugLog('parseCSV: First 200 chars:', csvText.substring(0, 200));
+    debugLog(`parseCSV: weeksToKeep parameter = ${weeksToKeep}`);
 
     const tweets: Tweet[] = [];
 
@@ -35,9 +36,13 @@ export function parseCSV(csvText: string, weeksToKeep: number = 5): Tweet[] {
     // Calculate cutoff date
     const now = new Date();
     const cutoffDate = new Date(now);
-    cutoffDate.setTime(cutoffDate.getTime() - weeksToKeep * 7 * 24 * 60 * 60 * 1000);
+    const millisecondsToSubtract = weeksToKeep * 7 * 24 * 60 * 60 * 1000;
+    cutoffDate.setTime(cutoffDate.getTime() - millisecondsToSubtract);
 
+    debugLog('parseCSV: Current date:', now.toISOString());
+    debugLog('parseCSV: Milliseconds to subtract:', millisecondsToSubtract);
     debugLog('parseCSV: Cutoff date:', cutoffDate.toISOString());
+    debugLog('parseCSV: Date range in days:', Math.round(millisecondsToSubtract / (24 * 60 * 60 * 1000)));
 
     // Use ET components to get the current year
     const nowET = getETComponents(now);
@@ -120,6 +125,7 @@ export function parseCSV(csvText: string, weeksToKeep: number = 5): Tweet[] {
               date: tweetDate,
             });
           } else if (tweetDate && tweetDate < cutoffDate) {
+            debugLog(`parseCSV: Stopped at tweet older than cutoff: ${tweetDate.toISOString()} < ${cutoffDate.toISOString()}`);
             // Stop processing if we've gone too far back
             break;
           }

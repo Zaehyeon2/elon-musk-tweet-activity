@@ -2,8 +2,9 @@
  * Configuration constants for the Elon Musk Tweet Activity Tracker
  */
 
-// Debug mode
-export const DEBUG_MODE: boolean = false as boolean; // Set to true to enable console logging
+// Debug mode - can be controlled via environment variable VITE_DEBUG_MODE
+// Set VITE_DEBUG_MODE=true in .env or pass it when running the dev server
+export const DEBUG_MODE: boolean = import.meta.env.VITE_DEBUG_MODE === 'true';
 
 // Prediction weights
 export const PREDICTION_WEIGHT_CURRENT = 0.7; // Weight for current week in predictions
