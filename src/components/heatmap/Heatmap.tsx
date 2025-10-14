@@ -162,8 +162,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({
                         type === 'current'
                           ? isFutureTime(dayIndex, hourIndex, dateRange.start)
                           : false;
-                      const current =
-                        showCurrentHour && isCurrentHour(day, hourIndex, now, dateRange.start);
+                      const current = showCurrentHour && isCurrentHour(day, hourIndex, now);
 
                       // For average heatmap, show decimal values
                       const displayValue = disabled

@@ -300,12 +300,7 @@ export function isCellDisabled(dayIndex: number, hourIndex: number): boolean {
  * @param startDate - Start date of the range
  * @returns True if this is the current hour
  */
-export function isCurrentHour(
-  day: string,
-  hour: number,
-  currentDate: Date = new Date(),
-  startDate?: Date,
-): boolean {
+export function isCurrentHour(day: string, hour: number, currentDate: Date = new Date()): boolean {
   const currentET = getETComponents(currentDate);
   const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   const currentDayName = dayNames[currentET.dayOfWeek];

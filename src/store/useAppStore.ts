@@ -133,8 +133,11 @@ export const useAppStore = create<AppState>()(
                   isLoading: false,
                   isLoadingData: false,
                   // Update lastRefreshTime: from API (new Date), from cache (cached time), or keep existing
-                  ...((!fromCache || forceRefresh) ? { lastRefreshTime: new Date() } :
-                      (cachedRefreshTime ? { lastRefreshTime: cachedRefreshTime } : {})),
+                  ...(!fromCache || forceRefresh
+                    ? { lastRefreshTime: new Date() }
+                    : cachedRefreshTime
+                      ? { lastRefreshTime: cachedRefreshTime }
+                      : {}),
                 });
 
                 // Save selected range
@@ -148,8 +151,11 @@ export const useAppStore = create<AppState>()(
                   isLoading: false,
                   isLoadingData: false,
                   // Update lastRefreshTime only when data is from API
-                  ...((!fromCache || forceRefresh) ? { lastRefreshTime: new Date() } :
-                      (cachedRefreshTime ? { lastRefreshTime: cachedRefreshTime } : {})),
+                  ...(!fromCache || forceRefresh
+                    ? { lastRefreshTime: new Date() }
+                    : cachedRefreshTime
+                      ? { lastRefreshTime: cachedRefreshTime }
+                      : {}),
                 });
               }
 

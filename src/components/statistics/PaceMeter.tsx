@@ -19,10 +19,14 @@ export const PaceMeter: React.FC = () => {
 
   // Determine speed level and color
   const getSpeedLevel = () => {
-    if (percentage >= 150) return { label: '🔥 Very Fast', color: 'bg-red-500', textColor: 'text-red-600' };
-    if (percentage >= 120) return { label: '⚡ Fast', color: 'bg-orange-500', textColor: 'text-orange-600' };
-    if (percentage >= 80) return { label: '✅ Normal', color: 'bg-green-500', textColor: 'text-green-600' };
-    if (percentage >= 50) return { label: '🐢 Slow', color: 'bg-blue-500', textColor: 'text-blue-600' };
+    if (percentage >= 150)
+      return { label: '🔥 Very Fast', color: 'bg-red-500', textColor: 'text-red-600' };
+    if (percentage >= 120)
+      return { label: '⚡ Fast', color: 'bg-orange-500', textColor: 'text-orange-600' };
+    if (percentage >= 80)
+      return { label: '✅ Normal', color: 'bg-green-500', textColor: 'text-green-600' };
+    if (percentage >= 50)
+      return { label: '🐢 Slow', color: 'bg-blue-500', textColor: 'text-blue-600' };
     return { label: '😴 Very Slow', color: 'bg-gray-500', textColor: 'text-gray-600' };
   };
 
@@ -49,9 +53,7 @@ export const PaceMeter: React.FC = () => {
             <div className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100">
               {currentRate.toFixed(1)}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              tweets per hour
-            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">tweets per hour</div>
           </div>
 
           {/* Visual Meter */}
@@ -63,9 +65,7 @@ export const PaceMeter: React.FC = () => {
                   key={i}
                   className={cn(
                     'flex-1 rounded-sm transition-all duration-500',
-                    i < filledSegments
-                      ? speedLevel.color
-                      : 'bg-gray-200 dark:bg-gray-700'
+                    i < filledSegments ? speedLevel.color : 'bg-gray-200 dark:bg-gray-700',
                   )}
                 />
               ))}

@@ -52,7 +52,9 @@ export const PredictionsCard: React.FC = () => {
                 <Tooltip open={openTooltip === 'pace'}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={(e) => handleTooltipClick('pace', e)}
+                      onClick={(e) => {
+                        handleTooltipClick('pace', e);
+                      }}
                       className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
                       <Info className="w-3 h-3 text-gray-600 dark:text-gray-300" />
@@ -75,7 +77,9 @@ export const PredictionsCard: React.FC = () => {
                 <Tooltip open={openTooltip === 'next24h'}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={(e) => handleTooltipClick('next24h', e)}
+                      onClick={(e) => {
+                        handleTooltipClick('next24h', e);
+                      }}
                       className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
                       <Info className="w-3 h-3 text-gray-600 dark:text-gray-300" />
@@ -110,7 +114,9 @@ export const PredictionsCard: React.FC = () => {
                 <Tooltip open={openTooltip === 'endOfRange'}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={(e) => handleTooltipClick('endOfRange', e)}
+                      onClick={(e) => {
+                        handleTooltipClick('endOfRange', e);
+                      }}
                       className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
                       <Info className="w-3 h-3 text-gray-600 dark:text-gray-300" />
@@ -147,7 +153,9 @@ export const PredictionsCard: React.FC = () => {
                 <Tooltip open={openTooltip === 'trend'}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={(e) => handleTooltipClick('trend', e)}
+                      onClick={(e) => {
+                        handleTooltipClick('trend', e);
+                      }}
                       className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
                       <Info className="w-3 h-3 text-gray-600 dark:text-gray-300" />
@@ -170,7 +178,9 @@ export const PredictionsCard: React.FC = () => {
                 <Tooltip open={openTooltip === 'momentum'}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={(e) => handleTooltipClick('momentum', e)}
+                      onClick={(e) => {
+                        handleTooltipClick('momentum', e);
+                      }}
                       className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
                       <Info className="w-3 h-3 text-gray-600 dark:text-gray-300" />
@@ -193,7 +203,9 @@ export const PredictionsCard: React.FC = () => {
                 <Tooltip open={openTooltip === 'daily'}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={(e) => handleTooltipClick('daily', e)}
+                      onClick={(e) => {
+                        handleTooltipClick('daily', e);
+                      }}
                       className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
                       <Info className="w-3 h-3 text-gray-600 dark:text-gray-300" />
