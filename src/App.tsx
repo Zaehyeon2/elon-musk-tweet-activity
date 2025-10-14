@@ -4,6 +4,7 @@ import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { SkeletonLoader } from '@/components/common/SkeletonLoader';
 import { Heatmap } from '@/components/heatmap/Heatmap';
 import { Header } from '@/components/layout/Header';
+import { PaceMeter } from '@/components/statistics/PaceMeter';
 import { PredictionsCard } from '@/components/statistics/PredictionsCard';
 import { StatisticsCards } from '@/components/statistics/StatisticsCards';
 import { Card } from '@/components/ui/card';
@@ -57,6 +58,9 @@ function App() {
                   {/* Statistics Skeleton */}
                   <SkeletonLoader type="card" className="h-32" />
 
+                  {/* Pace Meter Skeleton */}
+                  <SkeletonLoader type="card" className="h-52" />
+
                   {/* Predictions Skeleton */}
                   <SkeletonLoader type="card" className="h-40" />
 
@@ -84,6 +88,9 @@ function App() {
                 <>
                   {/* Statistics Cards */}
                   <StatisticsCards />
+
+                  {/* Pace Meter */}
+                  <PaceMeter />
 
                   {/* Predictions Card */}
                   <PredictionsCard />

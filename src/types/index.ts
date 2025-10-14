@@ -38,6 +38,8 @@ export interface PredictionData {
   momentumIndicator?: string;
   trendFactor?: number;
   dailyAvg?: string;
+  currentHourlyRate?: number;
+  avgHourlyRate?: number;
 }
 
 export interface ETComponents {

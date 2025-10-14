@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { Info } from 'lucide-react';
 
@@ -8,6 +8,34 @@ import { useAppStore } from '@/store/useAppStore';
 
 export const PredictionsCard: React.FC = () => {
   const { predictions } = useAppStore();
+  const [openTooltip, setOpenTooltip] = useState<string | null>(null);
+
+  const handleTooltipClick = (key: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenTooltip(openTooltip === key ? null : key);
+  };
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (openTooltip) {
+        setOpenTooltip(null);
+      }
+    };
+
+    if (openTooltip) {
+      // Add slight delay to prevent immediate closing on touch devices
+      setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);
+      }, 100);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [openTooltip]);
 
   return (
     <TooltipProvider delayDuration={0} skipDelayDuration={0}>
@@ -21,9 +49,12 @@ export const PredictionsCard: React.FC = () => {
             <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 p-2 sm:p-3 rounded-lg">
               <div className="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold whitespace-nowrap">
                 <span className="mr-1 text-xs sm:text-sm">⏱️</span> Current Pace
-                <Tooltip>
+                <Tooltip open={openTooltip === 'pace'}>
                   <TooltipTrigger asChild>
-                    <button className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <button
+                      onClick={(e) => handleTooltipClick('pace', e)}
+                      className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
                       <Info className="w-3 h-3 text-gray-600 dark:text-gray-300" />
                     </button>
                   </TooltipTrigger>
@@ -41,9 +72,12 @@ export const PredictionsCard: React.FC = () => {
             <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 p-2 sm:p-3 rounded-lg">
               <div className="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold whitespace-nowrap">
                 <span className="mr-1 text-xs sm:text-sm">🔮</span> Next 24h
-                <Tooltip>
+                <Tooltip open={openTooltip === 'next24h'}>
                   <TooltipTrigger asChild>
-                    <button className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <button
+                      onClick={(e) => handleTooltipClick('next24h', e)}
+                      className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
                       <Info className="w-3 h-3 text-gray-600 dark:text-gray-300" />
                     </button>
                   </TooltipTrigger>
@@ -73,9 +107,12 @@ export const PredictionsCard: React.FC = () => {
             <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 p-2 sm:p-3 rounded-lg">
               <div className="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold whitespace-nowrap">
                 <span className="mr-1 text-xs sm:text-sm">🎯</span> End of Range
-                <Tooltip>
+                <Tooltip open={openTooltip === 'endOfRange'}>
                   <TooltipTrigger asChild>
-                    <button className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <button
+                      onClick={(e) => handleTooltipClick('endOfRange', e)}
+                      className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
                       <Info className="w-3 h-3 text-gray-600 dark:text-gray-300" />
                     </button>
                   </TooltipTrigger>
@@ -107,9 +144,12 @@ export const PredictionsCard: React.FC = () => {
             <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 p-2 sm:p-3 rounded-lg">
               <div className="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold whitespace-nowrap">
                 <span className="mr-1 text-xs sm:text-sm">📊</span> Trend
-                <Tooltip>
+                <Tooltip open={openTooltip === 'trend'}>
                   <TooltipTrigger asChild>
-                    <button className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <button
+                      onClick={(e) => handleTooltipClick('trend', e)}
+                      className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
                       <Info className="w-3 h-3 text-gray-600 dark:text-gray-300" />
                     </button>
                   </TooltipTrigger>
@@ -127,9 +167,12 @@ export const PredictionsCard: React.FC = () => {
             <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 p-2 sm:p-3 rounded-lg">
               <div className="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold whitespace-nowrap">
                 <span className="mr-1 text-xs sm:text-sm">⚡</span> Momentum
-                <Tooltip>
+                <Tooltip open={openTooltip === 'momentum'}>
                   <TooltipTrigger asChild>
-                    <button className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <button
+                      onClick={(e) => handleTooltipClick('momentum', e)}
+                      className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
                       <Info className="w-3 h-3 text-gray-600 dark:text-gray-300" />
                     </button>
                   </TooltipTrigger>
@@ -147,9 +190,12 @@ export const PredictionsCard: React.FC = () => {
             <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 p-2 sm:p-3 rounded-lg">
               <div className="flex items-center text-gray-500 dark:text-gray-300 text-xs sm:text-sm font-semibold whitespace-nowrap">
                 <span className="mr-1 text-xs sm:text-sm">📅</span> Daily Avg
-                <Tooltip>
+                <Tooltip open={openTooltip === 'daily'}>
                   <TooltipTrigger asChild>
-                    <button className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <button
+                      onClick={(e) => handleTooltipClick('daily', e)}
+                      className="inline-flex items-center justify-center w-4 h-4 ml-1 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
                       <Info className="w-3 h-3 text-gray-600 dark:text-gray-300" />
                     </button>
                   </TooltipTrigger>

@@ -445,6 +445,18 @@ function calculatePredictionsInternal(
     endOfRangeRange: `${endOfRangeConfidence.min}-${endOfRangeConfidence.max}`,
   });
 
+  // Calculate current hourly rate for pace meter
+  let currentHourlyRate = 0;
+  let avgHourlyRate = 0;
+
+  if (elapsedHours > 0) {
+    currentHourlyRate = currentData.current / elapsedHours;
+    // For average, use the comparable period
+    if (comparableAvgTotal > 0) {
+      avgHourlyRate = comparableAvgTotal / elapsedHours;
+    }
+  }
+
   return {
     pace: pace,
     next24h: Math.max(0, Math.round(next24hTotal)),
@@ -458,6 +470,8 @@ function calculatePredictionsInternal(
     momentum: momentum,
     momentumIndicator: momentumIndicator,
     dailyAvg: dailyAvg,
+    currentHourlyRate: Math.round(currentHourlyRate * 10) / 10, // Round to 1 decimal
+    avgHourlyRate: Math.round(avgHourlyRate * 10) / 10,
   };
 }
 
