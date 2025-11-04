@@ -5,7 +5,7 @@
 
 import { debugLog } from '@/config/constants';
 import { Tweet } from '@/types';
-import { getETComponents, parseETNoonDate } from '@/utils/dateTime';
+import { createETNoonDate, getETComponents, parseETNoonDate } from '@/utils/dateTime';
 
 export interface WeekRange {
   value: string;
@@ -119,6 +119,11 @@ function findRecentDayOfWeek(from: Date, targetDayOfWeek: number): Date {
 /**
  * Get current week range, accounting for noon ET cutoff
  */
+function normalizeToETNoon(date: Date): Date {
+  const et = getETComponents(date);
+  return createETNoonDate(et.year, et.month + 1, et.day);
+}
+
 function getCurrentWeekRange(
   recentDay: Date,
   dayOfWeek: number,
@@ -134,7 +139,10 @@ function getCurrentWeekRange(
     end.setTime(end.getTime() + 7 * 24 * 60 * 60 * 1000);
   }
 
-  return { start, end };
+  return {
+    start: normalizeToETNoon(start),
+    end: normalizeToETNoon(end),
+  };
 }
 
 /**
@@ -151,7 +159,11 @@ function generateRangesForDay(
   // Add current/upcoming range
   const endDay = new Date(startDay);
   endDay.setTime(endDay.getTime() + 7 * 24 * 60 * 60 * 1000);
-  ranges.push({ start: new Date(startDay), end: new Date(endDay), type });
+  ranges.push({
+    start: normalizeToETNoon(startDay),
+    end: normalizeToETNoon(endDay),
+    type,
+  });
 
   // Add past 12 weeks (to show more historical data)
   let pastDay = new Date(startDay);
@@ -166,7 +178,11 @@ function generateRangesForDay(
 
     // Remove the date check to show all past weeks regardless of data availability
     // This allows showing empty weeks in the dropdown
-    ranges.push({ start: new Date(pastDay), end: new Date(end), type });
+    ranges.push({
+      start: normalizeToETNoon(pastDay),
+      end: normalizeToETNoon(end),
+      type,
+    });
   }
 
   debugLog(`[generateRangesForDay] Generated ${ranges.length} ranges for ${type}`);
