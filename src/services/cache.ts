@@ -15,7 +15,7 @@ interface CachedData {
 /**
  * Cache version - increment to invalidate old cached data
  */
-const CACHE_VERSION = 2; // Increment this to force cache refresh
+const CACHE_VERSION = 3; // Increment this to force cache refresh
 
 /**
  * Local storage keys

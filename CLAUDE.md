@@ -300,17 +300,18 @@ function Heatmap({ data }: { data: HeatmapData | null }) {
 
 #### `services/api.ts`
 
-- X Tracker API communication
+- Polymarket X Tracker API communication
+- Dynamic query window handling
 - CORS proxy handling with fallbacks
 - Network error handling
 - **When to modify**: API endpoint changes, new data sources
 
 #### `utils/parser.ts`
 
-- CSV file parsing (using PapaParse)
-- Tweet data extraction from CSV
-- Year inference for tweets without year
-- **When to modify**: CSV format changes, parsing logic improvements
+- Polymarket JSON payload parsing
+- Tweet data extraction and date conversion
+- Upload helper for manual JSON files
+- **When to modify**: JSON schema changes, parsing logic improvements
 
 #### `utils/processor.ts`
 
@@ -1212,15 +1213,15 @@ function isHeatmapData(data: unknown): data is HeatmapData {
 
 **Diagnosis**:
 
-1. Check Network tab for CORS errors
+1. Check Network tab for failed `xtracker.polymarket.com` requests
 2. Check terminal for Vite/API errors
-3. Try different CORS proxy in `services/api.ts`
-4. Test with manual CSV upload
+3. Confirm query params (start/end date) look correct
+4. Test with manual JSON upload
 
 **Fix**:
 
-- Update proxy URL in `services/api.ts`
-- Use CSV fallback upload feature
+- Verify API base URL in `services/api.ts`
+- Use JSON fallback upload feature
 - Check if API endpoint is still valid
 
 ### Issue: Predictions seem wrong

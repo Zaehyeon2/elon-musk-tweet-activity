@@ -10,13 +10,7 @@ import {
   WEEKS_FOR_TREND,
 } from '@/config/constants';
 import { HeatmapData, PredictionData, Tweet } from '@/types';
-import {
-  createETNoonDate,
-  formatHour,
-  getETComponents,
-  parseETNoonDate,
-  parseTwitterDate,
-} from '@/utils/dateTime';
+import { createETNoonDate, formatHour, getETComponents, parseETNoonDate } from '@/utils/dateTime';
 import { memoize } from '@/utils/performance';
 
 // ============================================================================
@@ -132,6 +126,7 @@ function predictNext24hWithPattern(
   if (!avgData?.grid) return 0;
 
   let prediction = 0;
+  const avgCurrentTotal = Math.max(0, avgData.current);
 
   // Iterate through next 24 hours
   for (let i = 0; i < 24; i++) {
@@ -153,7 +148,7 @@ function predictNext24hWithPattern(
     } else if (futureTime < endDate) {
       // Outside 8-day range but before end: use overall average hourly rate
       const totalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
-      const avgHourlyRate = avgData.current / totalHours;
+      const avgHourlyRate = avgCurrentTotal / totalHours;
       hourlyPrediction = avgHourlyRate * trendFactor;
     }
     // else: after range end, don't count
@@ -243,9 +238,8 @@ function calculatePredictionsInternal(
       momentumIndicator: '→',
     };
 
-  // Ensure current values are non-negative
-  if (currentData.current < 0) currentData.current = 0;
-  if (avgData.current < 0) avgData.current = 0;
+  // Ensure current values are non-negative without mutating source data
+  const currentTotal = Math.max(0, currentData.current);
 
   // Calculate current pace and projection
   const now = new Date();
@@ -285,18 +279,18 @@ function calculatePredictionsInternal(
     // Ensure we don't exceed total hours
     elapsedHours = Math.min(elapsedHours, totalHours);
 
-    const tweetsPerHour = currentData.current / elapsedHours;
+    const tweetsPerHour = currentTotal / elapsedHours;
     const remainingHours = Math.max(0, totalHours - elapsedHours);
     const projectedAdditional = tweetsPerHour * remainingHours;
-    const projectedTotal = Math.round(currentData.current + projectedAdditional);
+    const projectedTotal = Math.round(currentTotal + projectedAdditional);
 
     debugLog('Pace calculation:', {
-      current: currentData.current,
+      current: currentTotal,
       elapsedHours: elapsedHours.toFixed(2),
       remainingHours: remainingHours.toFixed(2),
       tweetsPerHour: tweetsPerHour.toFixed(4),
       projectedAdditional: projectedAdditional.toFixed(2),
-      beforeRound: (currentData.current + projectedAdditional).toFixed(2),
+      beforeRound: (currentTotal + projectedAdditional).toFixed(2),
       projectedTotal: projectedTotal,
       actualStartNoon: actualStartNoon.toISOString(),
       actualEndNoon: actualEndNoon.toISOString(),
@@ -308,7 +302,7 @@ function calculatePredictionsInternal(
     pace = projectedTotal.toLocaleString();
   } else if (elapsedHours === 0) {
     // If no time has elapsed yet (before start), show current total as pace
-    pace = currentData.current.toLocaleString();
+    pace = currentTotal.toLocaleString();
   }
 
   // Calculate trend factor (current week vs average for same elapsed time)
@@ -344,7 +338,7 @@ function calculatePredictionsInternal(
     }
   }
 
-  const trendFactor = comparableAvgTotal > 0 ? currentData.current / comparableAvgTotal : 1;
+  const trendFactor = comparableAvgTotal > 0 ? currentTotal / comparableAvgTotal : 1;
 
   // Use the already declared startDate and endDate from above
   startDate = currentData.dateRange.start;
@@ -364,37 +358,69 @@ function calculatePredictionsInternal(
   next24hConfidence = calculatePredictionConfidence(avgData, next24hTotal);
 
   // End of range prediction - use pattern-based approach for remaining hours
-  let weekEndTotal = currentData.current; // Start with current total
+  let weekEndTotal = currentTotal; // Start with current total
   let endOfRangeConfidence = {
-    min: currentData.current,
-    max: currentData.current,
+    min: currentTotal,
+    max: currentTotal,
     stdDev: 0,
   };
 
   const hoursRemaining = Math.max(0, (endDate.getTime() - now.getTime()) / (1000 * 60 * 60));
 
   if (hoursRemaining > 0) {
-    // Pattern-based prediction for remaining hours
+    // Pattern-based prediction for remaining hours with partial-hour weighting
     let remainingPrediction = 0;
+    const hourMs = 60 * 60 * 1000;
+    const combinedFactor = momentum * 0.3 + trendFactor * 0.7;
+    const maxIterations = Math.ceil(hoursRemaining) + 1;
 
-    for (let i = 0; i < hoursRemaining; i++) {
-      const futureTime = new Date(now.getTime() + i * 60 * 60 * 1000);
-      const futureET = getETComponents(futureTime);
-      const hour = futureET.hour;
-      const dayIndex = getDayIndexFromStart(futureTime, startDate);
+    for (let i = 0; i < maxIterations; i++) {
+      const bucketTime = new Date(now.getTime() + i * hourMs);
+      if (bucketTime >= endDate) {
+        break;
+      }
+
+      const bucketET = getETComponents(bucketTime);
+      const bucketOffsetMs =
+        bucketTime.getTime() -
+        Date.UTC(
+          bucketET.year,
+          bucketET.month,
+          bucketET.day,
+          bucketET.hour,
+          bucketET.minute,
+          bucketET.second,
+        );
+
+      const bucketStart = new Date(
+        Date.UTC(bucketET.year, bucketET.month, bucketET.day, bucketET.hour, 0, 0) + bucketOffsetMs,
+      );
+      const bucketEnd = new Date(bucketStart.getTime() + hourMs);
+
+      const effectiveStart = bucketStart < now ? now : bucketStart;
+      const effectiveEnd = bucketEnd > endDate ? endDate : bucketEnd;
+      const durationMs = effectiveEnd.getTime() - effectiveStart.getTime();
+      if (durationMs <= 0) {
+        continue;
+      }
+
+      const fraction = durationMs / hourMs;
+      const dayIndex = getDayIndexFromStart(bucketStart, startDate);
 
       if (dayIndex >= 0 && dayIndex <= 7) {
-        const avgValue = getGridValue(avgData.grid, hour, dayIndex);
-        // Use combined trend and momentum
-        const combinedFactor = momentum * 0.3 + trendFactor * 0.7;
-        remainingPrediction += avgValue * combinedFactor;
+        const avgValue = getGridValue(avgData.grid, bucketET.hour, dayIndex);
+        remainingPrediction += avgValue * combinedFactor * fraction;
+      }
+
+      if (bucketEnd >= endDate) {
+        break;
       }
     }
 
-    weekEndTotal = currentData.current + remainingPrediction;
+    weekEndTotal = currentTotal + remainingPrediction;
 
     debugLog('End of Range Prediction:', {
-      current: currentData.current,
+      current: currentTotal,
       hoursRemaining: hoursRemaining.toFixed(2),
       remainingPrediction: remainingPrediction.toFixed(2),
       total: weekEndTotal.toFixed(2),
@@ -404,7 +430,7 @@ function calculatePredictionsInternal(
     const scaledStdDev = next24hConfidence.stdDev * Math.sqrt(hoursRemaining / 24);
     const margin = scaledStdDev * 1.5;
     endOfRangeConfidence = {
-      min: Math.max(currentData.current, Math.round(weekEndTotal - margin)),
+      min: Math.max(currentTotal, Math.round(weekEndTotal - margin)),
       max: Math.round(weekEndTotal + margin),
       stdDev: scaledStdDev,
     };
@@ -430,7 +456,7 @@ function calculatePredictionsInternal(
   let dailyAvg = '-';
   if (elapsedHours > 0) {
     const elapsedDays = Math.max(1, elapsedHours / 24);
-    const avgPerDay = Math.round(currentData.current / elapsedDays);
+    const avgPerDay = Math.round(currentTotal / elapsedDays);
     dailyAvg = avgPerDay.toString();
   }
 
@@ -450,7 +476,7 @@ function calculatePredictionsInternal(
   let avgHourlyRate = 0;
 
   if (elapsedHours > 0) {
-    currentHourlyRate = currentData.current / elapsedHours;
+    currentHourlyRate = currentTotal / elapsedHours;
     // For average, use the comparable period
     if (comparableAvgTotal > 0) {
       avgHourlyRate = comparableAvgTotal / elapsedHours;
@@ -547,8 +573,8 @@ function calculate4WeekAverageInternal(
     const weekStartDayNoon = parseETNoonDate(weekStartDateStr);
 
     tweets.forEach((tweet) => {
-      const date = parseTwitterDate(tweet.created_at);
-      if (date && date >= weekStart && date < weekEnd) {
+      const date = tweet.date instanceof Date ? tweet.date : new Date(tweet.created_at);
+      if (date >= weekStart && date < weekEnd) {
         const dateET = getETComponents(date);
         const hour = dateET.hour;
 

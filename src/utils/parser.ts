@@ -1,163 +1,72 @@
 /**
- * CSV Parser for tweet data
- * Handles parsing of X Tracker CSV format
+ * Parser for Polymarket JSON payload
  */
 
 import { debugLog } from '@/config/constants';
-import { Tweet } from '@/types';
-import { getETComponents, parseTwitterDate } from '@/utils/dateTime';
+import { PolymarketPost, Tweet } from '@/types';
+import { getETComponents } from '@/utils/dateTime';
+
+const MILLISECONDS_IN_WEEK = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Parse CSV text into tweet objects
- * @param csvText - Raw CSV text from X Tracker API or file
+ * Convert Polymarket posts into Tweet objects used by the app
+ * @param posts - Polymarket JSON payload
  * @param weeksToKeep - Number of weeks of data to keep (default: 12)
  * @returns Array of parsed tweet objects
  */
-export function parseCSV(csvText: string, weeksToKeep: number = 12): Tweet[] {
+export function parsePolymarketPosts(
+  posts: PolymarketPost[],
+  weeksToKeep: number = 12,
+): Tweet[] {
   try {
-    debugLog('parseCSV: Input length:', csvText.length);
-    debugLog('parseCSV: First 200 chars:', csvText.substring(0, 200));
-    debugLog(`parseCSV: weeksToKeep parameter = ${weeksToKeep}`);
+    debugLog('parsePolymarketPosts: Input count:', posts.length);
+    debugLog(`parsePolymarketPosts: weeksToKeep parameter = ${weeksToKeep}`);
 
-    const tweets: Tweet[] = [];
-
-    // Find all lines ending with EDT or EST to avoid multiline parsing issues
-    const lines = csvText.split('\n');
-    const tweetLines: string[] = [];
-
-    lines.forEach((line) => {
-      if (line.endsWith('EDT"') || line.endsWith('EST"')) {
-        tweetLines.push(line);
-      }
-    });
-
-    debugLog(`parseCSV: Found ${tweetLines.length} tweets by EDT/EST pattern`);
-
-    // Calculate cutoff date
     const now = new Date();
     const cutoffDate = new Date(now);
-    const millisecondsToSubtract = weeksToKeep * 7 * 24 * 60 * 60 * 1000;
-    cutoffDate.setTime(cutoffDate.getTime() - millisecondsToSubtract);
+    cutoffDate.setTime(cutoffDate.getTime() - weeksToKeep * MILLISECONDS_IN_WEEK);
 
-    debugLog('parseCSV: Current date:', now.toISOString());
-    debugLog('parseCSV: Milliseconds to subtract:', millisecondsToSubtract);
-    debugLog('parseCSV: Cutoff date:', cutoffDate.toISOString());
-    debugLog('parseCSV: Date range in days:', Math.round(millisecondsToSubtract / (24 * 60 * 60 * 1000)));
-
-    // Use ET components to get the current year
-    const nowET = getETComponents(now);
-    let currentYear = nowET.year;
-    let lastMonth = 13; // Start with invalid month to detect year change
-
-    // Process tweets in reverse order (newest first)
-    for (let i = tweetLines.length - 1; i >= 0; i--) {
-      const line = tweetLines[i];
-      if (!line) continue;
-
-      // Extract the date/time part
-      const edtIndex = line.lastIndexOf('EDT"');
-      const estIndex = line.lastIndexOf('EST"');
-      const timeEndIndex = edtIndex > 0 ? edtIndex : estIndex;
-
-      if (timeEndIndex > 0) {
-        const beforeTime = line.substring(0, timeEndIndex);
-        const lastQuoteBeforeTime = beforeTime.lastIndexOf('"');
-
-        if (lastQuoteBeforeTime > 0) {
-          const dateTimeStr =
-            beforeTime.substring(lastQuoteBeforeTime + 1) + (edtIndex > 0 ? 'EDT' : 'EST');
-
-          // Smart year detection
-          const monthMatch = dateTimeStr.match(/^(\w+) (\d+)/);
-          if (monthMatch) {
-            const monthNames = [
-              'Jan',
-              'Feb',
-              'Mar',
-              'Apr',
-              'May',
-              'Jun',
-              'Jul',
-              'Aug',
-              'Sep',
-              'Oct',
-              'Nov',
-              'Dec',
-            ];
-            const monthStr = monthMatch[1];
-            if (!monthStr) continue;
-            const monthIndex = monthNames.indexOf(monthStr);
-
-            // Detect year change when going backwards
-            if (monthIndex > lastMonth && lastMonth !== 13) {
-              currentYear--;
-            }
-            lastMonth = monthIndex;
-          }
-
-          // Create date string with estimated year
-          const dateWithYear = dateTimeStr.replace(/^(\w+ \d+)/, `$1, ${currentYear}`);
-
-          // Parse and check if within range
-          const tweetDate = parseTwitterDate(dateWithYear);
-
-          // Debug logging for first few tweets
-          if (tweets.length < 5) {
-            debugLog('Parsing tweet:', {
-              original: dateTimeStr,
-              withYear: dateWithYear,
-              parsed: tweetDate,
-              isoString: tweetDate ? tweetDate.toISOString() : 'null',
-            });
-          }
-
-          if (tweetDate && tweetDate >= cutoffDate) {
-            // Extract id and text from the line
-            const parts = line.split('","');
-            const id = parts[0]?.replace(/^"|"$/g, '') || `tweet_${tweets.length}`;
-            const text = parts[1] || '';
-
-            // Add to beginning since we're processing in reverse
-            tweets.unshift({
-              id,
-              text,
-              created_at: dateWithYear,
-              date: tweetDate,
-            });
-          } else if (tweetDate && tweetDate < cutoffDate) {
-            debugLog(`parseCSV: Stopped at tweet older than cutoff: ${tweetDate.toISOString()} < ${cutoffDate.toISOString()}`);
-            // Stop processing if we've gone too far back
-            break;
-          }
+    const tweets = posts
+      .map((post, index) => {
+        if (!post?.createdAt || !post?.content) {
+          return null;
         }
-      }
-    }
 
-    debugLog(`parseCSV: Parsed ${tweets.length} tweets within date range`);
+        const createdDate = new Date(post.createdAt);
+        if (Number.isNaN(createdDate.getTime())) {
+          debugLog('parsePolymarketPosts: Skipping post with invalid date:', post.createdAt);
+          return null;
+        }
 
-    // Debug: Check for today's tweets
-    const today = new Date();
-    const todayET = getETComponents(today);
-    const todayStr = `${todayET.year}-${String(todayET.month + 1).padStart(2, '0')}-${String(todayET.day).padStart(2, '0')}`;
+        if (createdDate < cutoffDate) {
+          return null;
+        }
 
-    const todayTweets = tweets.filter((tweet) => {
-      const tweetET = getETComponents(tweet.date);
-      const tweetStr = `${tweetET.year}-${String(tweetET.month + 1).padStart(2, '0')}-${String(tweetET.day).padStart(2, '0')}`;
-      return tweetStr === todayStr;
-    });
+        const tweet: Tweet = {
+          id: post.id || post.platformId || `tweet_${index}`,
+          text: post.content,
+          created_at: post.createdAt,
+          date: createdDate,
+          platformId: post.platformId,
+          importedAt: post.importedAt,
+          metrics: post.metrics,
+        };
 
-    debugLog(`Today's tweets (${todayStr}):`, todayTweets.length, todayTweets.slice(0, 3));
+        return tweet;
+      })
+      .filter(Boolean) as Tweet[];
 
-    // Debug: Show date range
+    tweets.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    debugLog(`parsePolymarketPosts: Parsed ${tweets.length} tweets within date range`);
+
     if (tweets.length > 0) {
       const firstTweet = tweets[0];
       const lastTweet = tweets[tweets.length - 1];
 
-      const firstDate = firstTweet.date;
-      const lastDate = lastTweet.date;
+      const firstET = getETComponents(firstTweet.date);
+      const lastET = getETComponents(lastTweet.date);
 
-      const firstET = getETComponents(firstDate);
-      const lastET = getETComponents(lastDate);
       debugLog('Tweet date range:', {
         first: `${firstET.year}-${firstET.month + 1}-${firstET.day} ${firstET.hour}:${firstET.minute}`,
         last: `${lastET.year}-${lastET.month + 1}-${lastET.day} ${lastET.hour}:${lastET.minute}`,
@@ -165,11 +74,35 @@ export function parseCSV(csvText: string, weeksToKeep: number = 12): Tweet[] {
       });
     }
 
-    // Don't sort - keep the order as parsed (newest first already)
     return tweets;
   } catch (error) {
-    console.error('Failed to parse CSV:', error);
-    debugLog('CSV parsing error:', error);
+    console.error('Failed to parse Polymarket posts:', error);
+    debugLog('Polymarket parsing error:', error);
+    return [];
+  }
+}
+
+/**
+ * Helper to parse a JSON string into tweets (supports raw array or { data: [] })
+ */
+export function parsePolymarketJson(jsonText: string, weeksToKeep: number = 12): Tweet[] {
+  try {
+    const parsed = JSON.parse(jsonText) as unknown;
+    const posts = Array.isArray(parsed)
+      ? (parsed as PolymarketPost[])
+      : typeof parsed === 'object' && parsed !== null && Array.isArray((parsed as { data?: unknown }).data)
+        ? ((parsed as { data: PolymarketPost[] }).data)
+        : [];
+
+    if (!Array.isArray(posts) || posts.length === 0) {
+      debugLog('parsePolymarketJson: No posts found in JSON payload');
+      return [];
+    }
+
+    return parsePolymarketPosts(posts, weeksToKeep);
+  } catch (error) {
+    console.error('Failed to parse Polymarket JSON text:', error);
+    debugLog('Polymarket JSON parsing error:', error);
     return [];
   }
 }

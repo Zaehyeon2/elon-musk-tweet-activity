@@ -3,6 +3,9 @@ export interface Tweet {
   text: string;
   created_at: string;
   date: Date;
+  platformId?: string;
+  importedAt?: string;
+  metrics?: Record<string, unknown> | null;
 }
 
 export interface DateRange {
@@ -90,4 +93,19 @@ export interface AppState {
   stopAutoRefresh: () => void;
   reset: () => void;
   updateRefreshCountdown: (countdown: number) => void;
+}
+
+export interface PolymarketPost {
+  id: string;
+  userId: string;
+  platformId: string;
+  content: string;
+  createdAt: string;
+  importedAt: string;
+  metrics: Record<string, unknown> | null;
+}
+
+export interface PolymarketResponse {
+  success: boolean;
+  data: PolymarketPost[];
 }

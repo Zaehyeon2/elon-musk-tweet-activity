@@ -128,9 +128,10 @@ python -m http.server 8000
 
 ## 📡 데이터 소스
 
-- **API**: X Tracker (`xtracker.io`) - CORS 프록시를 통해 접근
+- **API**: Polymarket X Tracker JSON (`xtracker.polymarket.com`)
 - **업데이트**: 실시간 (자동 새로고침 ON 시 60초마다)
-- **백업**: API 실패 시 CSV 파일 수동 업로드 가능
+- **백업**: API 실패 시 JSON 파일 수동 업로드 가능
+- **CORS**: 기본 프록시(`corsproxy.io`) 사용, 실패 시 여러 프록시로 자동 재시도
 
 ## 🔧 기술 세부사항
 
@@ -290,14 +291,6 @@ Momentum = 최근 6시간 실제 트윗 / 최근 6시간 4주 평균
 - Modern browser with ES2020+ support
 - React 19 requires modern browsers (no IE11)
 
-### CORS 이슈 해결
-
-API 접근 실패 시:
-
-1. **CORS 프록시**: 여러 프록시를 자동으로 시도합니다
-2. **CSV 백업**: UI에서 CSV 파일 수동 업로드 가능
-3. **로컬 캐싱**: 성공한 데이터를 LocalStorage에 캐싱
-
 ## 📁 파일 구조
 
 ```
@@ -316,7 +309,7 @@ elon-musk-tweet-activity/
 │   │   ├── useInitialLoad.ts
 │   │   └── useTheme.ts
 │   ├── services/
-│   │   ├── api.ts     # X Tracker API
+│   │   ├── api.ts     # Polymarket X Tracker API
 │   │   └── cache.ts   # LocalStorage 캐싱
 │   ├── store/
 │   │   └── useAppStore.ts  # Zustand 전역 상태

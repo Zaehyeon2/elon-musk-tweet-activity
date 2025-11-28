@@ -28,7 +28,7 @@ export const MEMO_CACHE_MAX = 50; // Maximum memoization cache size
 export const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 // API Configuration
-export const API_BASE_URL = 'https://www.xtracker.io/api';
+export const API_BASE_URL = 'https://xtracker.polymarket.com/api';
 export const CORS_PROXY_URL = 'https://corsproxy.io/?';
 
 // Debug logging wrapper

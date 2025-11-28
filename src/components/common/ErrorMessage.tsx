@@ -4,6 +4,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { getDirectDownloadUrl } from '@/services/api';
 
 interface ErrorMessageProps {
   title?: string;
@@ -20,6 +21,8 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
   showUpload = false,
   onUpload,
 }) => {
+  const directDownloadUrl = getDirectDownloadUrl();
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && onUpload) {
@@ -47,8 +50,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
               <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 space-y-1">
                 <li>Check your internet connection</li>
                 <li>Try using a different browser</li>
-                <li>Install a CORS extension (for development)</li>
-                {showUpload && <li>Upload a CSV file manually</li>}
+                {showUpload && <li>Upload a JSON file manually</li>}
               </ul>
             </div>
 
@@ -65,26 +67,26 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
                 <div>
                   <input
                     type="file"
-                    accept=".csv"
+                    accept=".json,application/json"
                     onChange={handleFileUpload}
                     className="hidden"
                     id="error-csv-upload"
                   />
                   <label htmlFor="error-csv-upload">
                     <Button size="sm" variant="outline" asChild>
-                      <span>Upload CSV</span>
+                      <span>Upload JSON</span>
                     </Button>
                   </label>
                 </div>
               )}
 
               <a
-                href="https://www.xtracker.io/api/download"
+                href={directDownloadUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <Button size="sm" variant="outline">
-                  Download from X Tracker
+                  Download from Polymarket
                 </Button>
               </a>
             </div>

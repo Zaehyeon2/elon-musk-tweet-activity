@@ -4,10 +4,10 @@ import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import { AUTO_REFRESH_INTERVAL, debugLog } from '@/config/constants';
 import { API, fetchWithFallback } from '@/services/api';
 import { CacheService } from '@/services/cache';
-import { AppState, DateRange, HeatmapData, PredictionData, Tweet } from '@/types';
+import { AppState, DateRange, HeatmapData, PolymarketPost, PredictionData, Tweet } from '@/types';
 import { calculate4WeekAverage, calculatePredictions } from '@/utils/analytics';
 import { generateWeekRanges, getDefaultWeekRange } from '@/utils/dateRanges';
-import { parseCSV } from '@/utils/parser';
+import { parsePolymarketJson, parsePolymarketPosts } from '@/utils/parser';
 import { processData } from '@/utils/processor';
 
 const initialState = {
@@ -66,18 +66,19 @@ export const useAppStore = create<AppState>()(
               // Fetch fresh data if no cache or force refresh
               if (!fromCache || forceRefresh) {
                 debugLog('Fetching fresh data from API...');
-                let csvText: string;
+                let posts: PolymarketPost[] = [];
 
                 try {
-                  csvText = await API.fetchTweetData();
+                  posts = await API.fetchTweetData();
                 } catch {
-                  // Try fallback proxies if primary fails
-                  debugLog('Primary API failed, trying fallbacks...');
-                  csvText = await fetchWithFallback();
+                  // Try fallback if primary fails
+                  debugLog('Primary API failed, trying fallback fetch...');
+                  posts = await fetchWithFallback();
                 }
 
-                debugLog('Store: About to parse CSV, length:', csvText.length);
-                tweets = parseCSV(csvText, 12);
+                const postArray = Array.isArray(posts) ? posts : [];
+                debugLog('Store: About to parse Polymarket posts. Count:', postArray.length);
+                tweets = parsePolymarketPosts(postArray, 12);
                 debugLog('Store: Parsed tweets count:', tweets.length);
 
                 if (tweets.length === 0) {
@@ -176,15 +177,15 @@ export const useAppStore = create<AppState>()(
 
             try {
               const text = await file.text();
-              const tweets = parseCSV(text, 12);
+              const tweets = parsePolymarketJson(text, 12);
 
               if (tweets.length === 0) {
-                throw new Error('No valid tweets found in CSV');
+                throw new Error('No valid tweets found in uploaded data');
               }
 
-              debugLog(`Successfully parsed ${tweets.length} tweets from CSV`);
+              debugLog(`Successfully parsed ${tweets.length} tweets from uploaded file`);
 
-              // Save to cache (CSV upload is not from API)
+              // Save to cache (manual upload is not from API)
               CacheService.saveTweets(tweets, false);
 
               // Generate available date ranges
@@ -211,12 +212,15 @@ export const useAppStore = create<AppState>()(
                 predictions,
                 isLoading: false,
                 isLoadingData: false,
-                // Don't update lastRefreshTime for CSV uploads (not from API)
+                // Don't update lastRefreshTime for manual uploads (not from API)
               });
             } catch (error) {
-              console.error('Failed to upload CSV:', error);
+              console.error('Failed to upload data file:', error);
               set({
-                error: error instanceof Error ? error.message : 'Failed to parse CSV file',
+                error:
+                  error instanceof Error
+                    ? error.message
+                    : 'Failed to parse uploaded data file',
                 isLoading: false,
               });
             }
